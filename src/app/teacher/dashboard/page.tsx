@@ -36,7 +36,7 @@ export default async function DashboardPage() {
   } = await supabase.auth.getUser();
 
   // Fetch teacher's name
-  let teacherName = user?.user_metadata?.name || user?.email || "Teacher";
+  const teacherName = user?.user_metadata?.name || user?.email || "Teacher";
 
   // Fetch counts
   const [{ count: templatesCount }, { count: sessionsCount }] = await Promise.all([

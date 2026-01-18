@@ -1,6 +1,5 @@
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
-import Link from "next/link";
 import SessionList from "./(components)/SessionList";
 
 export const dynamic = "force-dynamic";

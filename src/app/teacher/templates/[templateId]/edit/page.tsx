@@ -7,9 +7,19 @@ import QuizBuilder from "../../(components)/QuizBuilder";
 import PollBuilder from "../../(components)/PollBuilder";
 import FeedbackBuilder from "../../(components)/FeedbackBuilder";
 
+interface Template {
+  id: string;
+  name: string;
+  type: string;
+  settings?: {
+    instructions?: string;
+  };
+  // Add other template properties as needed
+}
+
 export default function EditTemplatePage() {
   const { templateId } = useParams();
-  const [template, setTemplate] = useState<any>(null);
+  const [template, setTemplate] = useState<Template | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

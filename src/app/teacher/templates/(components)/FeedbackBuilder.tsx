@@ -14,9 +14,19 @@ interface FeedbackField {
   order_index: number;
 }
 
+interface Template {
+  id: string;
+  name: string;
+  type: string;
+  settings?: {
+    instructions?: string;
+  };
+  // Add other template properties as needed
+}
+
 interface FeedbackBuilderProps {
   isEdit: boolean;
-  template?: any;
+  template?: Template;
 }
 
 export default function FeedbackBuilder({ isEdit, template }: FeedbackBuilderProps) {
@@ -29,14 +39,6 @@ export default function FeedbackBuilder({ isEdit, template }: FeedbackBuilderPro
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
-  useEffect(() => {
-    if (isEdit && template) {
-      setName(template.name);
-      setInstructions(template.settings?.instructions || "");
-      loadFields();
-    }
-  }, [isEdit, template]);
-
   const loadFields = async () => {
     const { data } = await supabase
       .from("feedback_fields")
@@ -45,6 +47,14 @@ export default function FeedbackBuilder({ isEdit, template }: FeedbackBuilderPro
       .order("order_index");
     setFields(data || []);
   };
+
+  useEffect(() => {
+    if (isEdit && template) {
+      setName(template.name); // eslint-disable-line react-hooks/set-state-in-effect
+      setInstructions(template.settings?.instructions || ""); // eslint-disable-line react-hooks/set-state-in-effect
+      loadFields();
+    }
+  }, [isEdit, template]);
 
   const addField = () => {
     setFields([...fields, {
@@ -55,7 +65,7 @@ export default function FeedbackBuilder({ isEdit, template }: FeedbackBuilderPro
     }]);
   };
 
-  const updateField = (index: number, field: keyof FeedbackField, value: any) => {
+  const updateField = (index: number, field: keyof FeedbackField, value: string | boolean) => {
     const newFields = [...fields];
     newFields[index] = { ...newFields[index], [field]: value };
     setFields(newFields);

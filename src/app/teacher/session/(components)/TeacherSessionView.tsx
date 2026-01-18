@@ -3,23 +3,47 @@ import { useEffect, useState, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { socketManager } from "@/lib/socket";
 
+interface Question {
+  id: string;
+  text: string;
+  // Add other question properties as needed
+}
+
+interface Stats {
+  total: number;
+  answered: number;
+}
+
+interface BroadcastPayload {
+  [key: string]: string | number | boolean | object;
+}
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
 export default function TeacherSessionView({ sessionId }: { sessionId: string }) {
-  const [questions, setQuestions] = useState<any[]>([]);
+  const [questions, setQuestions] = useState<Question[]>([]);
   const [current, setCurrent] = useState(0);
-  const [stats, setStats] = useState<any>({});
+  const [stats, setStats] = useState<Stats>({ total: 0, answered: 0 });
   const [timer, setTimer] = useState(0);
   const [live, setLive] = useState(true);
   const [participantCount, setParticipantCount] = useState(0);
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const updateStats = async () => {
+    // Fetch current stats from Supabase
+    const { data: answers } = await supabase.from("quiz_answers").select("*").eq("session_id", sessionId).eq("question_index", current);
+    const total = answers?.length || 0;
+    const answered = answers?.filter(a => a.answer !== null).length || 0;
+    setStats({ total, answered });
+  };
 
   useEffect(() => {
     socketManager.connect(sessionId);
 
-    socketManager.on("ANSWER_SUBMITTED", (payload) => {
+    socketManager.on("ANSWER_SUBMITTED", (_payload) => {
       // Update stats
       updateStats();
     });
@@ -28,7 +52,7 @@ export default function TeacherSessionView({ sessionId }: { sessionId: string })
       setParticipantCount(payload.count);
     });
 
-    socketManager.on("time-sync", (payload) => {
+    socketManager.on("time-sync", (_payload) => {
       // Handle time sync if needed
     });
 
@@ -62,15 +86,7 @@ export default function TeacherSessionView({ sessionId }: { sessionId: string })
     };
   }, [live]);
 
-  const updateStats = async () => {
-    // Fetch current stats from Supabase
-    const { data: answers } = await supabase.from("quiz_answers").select("*").eq("session_id", sessionId).eq("question_index", current);
-    const total = answers?.length || 0;
-    const answered = answers?.filter(a => a.answer !== null).length || 0;
-    setStats({ total, answered });
-  };
-
-  const broadcast = (event: string, payload: any) => {
+  const broadcast = (event: string, payload: BroadcastPayload) => {
     socketManager.emit(event, { sessionId, ...payload });
   };
 

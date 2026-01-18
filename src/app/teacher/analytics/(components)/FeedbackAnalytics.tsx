@@ -4,11 +4,17 @@ import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 interface FeedbackAnalyticsProps {
-  session: any;
+  session: {
+    id: string;
+    templates?: {
+      title: string;
+      type: string;
+    };
+  };
 }
 
 export default function FeedbackAnalytics({ session }: FeedbackAnalyticsProps) {
-  const [responses, setResponses] = useState<any[]>([]);
+  const [responses, setResponses] = useState<{ id: string; question_id: string; response: string; user_id: string }[]>([]);
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -24,7 +30,7 @@ export default function FeedbackAnalytics({ session }: FeedbackAnalyticsProps) {
     };
 
     loadData();
-  }, [session.id]);
+  }, [session.id, supabase]);
 
   return (
     <div>

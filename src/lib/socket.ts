@@ -11,7 +11,7 @@ class SocketManager {
     this.socket.emit("join-room", sessionId);
 
     // Handle heartbeat
-    this.socket.on("heartbeat", (data) => {
+    this.socket.on("heartbeat", (_data) => {
       this.socket?.emit("heartbeat-response");
     });
   }
@@ -24,19 +24,19 @@ class SocketManager {
     }
   }
 
-  emit(event: string, payload: any) {
+  emit(event: string, payload: unknown) {
     if (this.socket) {
       this.socket.emit(event, payload);
     }
   }
 
-  on(event: string, handler: (payload: any) => void) {
+  on(event: string, handler: (payload: unknown) => void) {
     if (this.socket) {
       this.socket.on(event, handler);
     }
   }
 
-  off(event: string, handler?: (payload: any) => void) {
+  off(event: string, handler?: (payload: unknown) => void) {
     if (this.socket) {
       if (handler) {
         this.socket.off(event, handler);

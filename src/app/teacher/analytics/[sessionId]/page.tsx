@@ -5,9 +5,17 @@ import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 import AnalyticsView from "../(components)/AnalyticsView";
 
+interface Session {
+  id: string;
+  templates?: {
+    type: string;
+  };
+  // Add other session properties as needed
+}
+
 export default function SessionAnalyticsPage() {
   const { sessionId } = useParams();
-  const [session, setSession] = useState<any>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

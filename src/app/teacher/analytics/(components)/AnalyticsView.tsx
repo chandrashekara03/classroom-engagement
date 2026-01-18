@@ -4,8 +4,16 @@ import QuizAnalytics from "./QuizAnalytics";
 import PollAnalytics from "./PollAnalytics";
 import FeedbackAnalytics from "./FeedbackAnalytics";
 
+interface Session {
+  id: string;
+  templates?: {
+    type: string;
+  };
+  // Add other session properties as needed
+}
+
 interface AnalyticsViewProps {
-  session: any;
+  session: Session;
 }
 
 export default function AnalyticsView({ session }: AnalyticsViewProps) {

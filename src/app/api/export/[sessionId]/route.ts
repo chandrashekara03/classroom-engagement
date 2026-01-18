@@ -3,6 +3,38 @@ import { createClient } from "@supabase/supabase-js";
 import * as XLSX from "xlsx";
 import JSZip from "jszip";
 
+interface Template {
+  type: string;
+  title?: string;
+}
+
+interface Session {
+  templates: Template;
+}
+
+interface QuizAnswer {
+  id: string;
+  question_id: string;
+  answer: string;
+  user_id: string;
+  created_at: string;
+}
+
+interface PollResponse {
+  id: string;
+  option_id: string;
+  user_id: string;
+  created_at: string;
+}
+
+interface FeedbackResponse {
+  id: string;
+  question_id: string;
+  response: string;
+  user_id: string;
+  created_at: string;
+}
+
 export async function GET(request: NextRequest, { params }: { params: Promise<{ sessionId: string }> }) {
   const { sessionId } = await params;
   const { searchParams } = new URL(request.url);
@@ -23,7 +55,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
   if (!session) return NextResponse.json({ error: "Session not found" }, { status: 404 });
 
-  const type = (session.templates as any)?.type;
+  const type = (session as Session).templates?.type;
 
   if (all) {
     // Export all as ZIP
@@ -53,7 +85,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     });
   } else {
     // Single export
-    let data: any[] = [];
+    let data: QuizAnswer[] | PollResponse[] | FeedbackResponse[] = [];
     let filename = "";
 
     if (type === "quiz") {
@@ -77,14 +109,20 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   }
 }
 
-async function getQuizLeaderboard(supabase: any, sessionId: string) {
+interface QuizAnswerData {
+  student_id: string;
+  answer: string;
+  is_correct: boolean;
+}
+
+async function getQuizLeaderboard(supabase: ReturnType<typeof createClient>, sessionId: string) {
   const { data: answers } = await supabase
     .from("quiz_answers")
     .select("student_id, answer, is_correct")
     .eq("session_id", sessionId);
 
   const scores: { [key: string]: { correct: number; total: number } } = {};
-  answers?.forEach((a: any) => {
+  answers?.forEach((a: QuizAnswerData) => {
     if (!scores[a.student_id]) scores[a.student_id] = { correct: 0, total: 0 };
     scores[a.student_id].total++;
     if (a.is_correct) scores[a.student_id].correct++;
@@ -98,14 +136,14 @@ async function getQuizLeaderboard(supabase: any, sessionId: string) {
   })).sort((a, b) => b.score - a.score);
 }
 
-async function getPollResults(supabase: any, sessionId: string) {
+async function getPollResults(supabase: ReturnType<typeof createClient>, sessionId: string) {
   const { data: votes } = await supabase
     .from("poll_votes")
     .select("option_id, poll_options(option_text)")
     .eq("session_id", sessionId);
 
   const counts: { [key: string]: number } = {};
-  votes?.forEach((v: any) => {
+  votes?.forEach((v: { poll_options?: { option_text?: string } }) => {
     const text = v.poll_options?.option_text || "Unknown";
     counts[text] = (counts[text] || 0) + 1;
   });
@@ -113,7 +151,7 @@ async function getPollResults(supabase: any, sessionId: string) {
   return Object.entries(counts).map(([option, count]) => ({ option, count }));
 }
 
-async function getFeedbackResponses(supabase: any, sessionId: string) {
+async function getFeedbackResponses(supabase: ReturnType<typeof createClient>, sessionId: string) {
   const { data } = await supabase
     .from("feedback_responses")
     .select("*")
@@ -121,7 +159,7 @@ async function getFeedbackResponses(supabase: any, sessionId: string) {
   return data || [];
 }
 
-function generateFile(data: any[], format: string) {
+function generateFile(data: QuizAnswer[] | PollResponse[] | FeedbackResponse[] | Record<string, unknown>[], format: string) {
   if (format === "xlsx") {
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();

@@ -4,16 +4,34 @@ import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 import BarChart from "./BarChart";
 
-interface PollAnalyticsProps {
-  session: any;
+interface Session {
+  id: string;
+  // Add other session properties as needed
 }
 
+interface PollData {
+  label: string;
+  value: number;
+}
+
+interface PollAnswer {
+  option_id: string;
+  poll_options: {
+    option_text: string;
+  } | null;
+}
+
+interface PollAnalyticsProps {
+  session: Session;
+}
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
 export default function PollAnalytics({ session }: PollAnalyticsProps) {
-  const [distribution, setDistribution] = useState<any[]>([]);
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  const [distribution, setDistribution] = useState<PollData[]>([]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -23,7 +41,7 @@ export default function PollAnalytics({ session }: PollAnalyticsProps) {
         .eq("session_id", session.id);
 
       const counts: { [key: string]: number } = {};
-      answers?.forEach((a: any) => {
+      answers?.forEach((a: PollAnswer) => {
         const text = a.poll_options?.option_text || "Unknown";
         counts[text] = (counts[text] || 0) + 1;
       });

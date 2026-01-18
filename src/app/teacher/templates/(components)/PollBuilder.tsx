@@ -12,9 +12,16 @@ interface PollOption {
   order_index: number;
 }
 
+interface Template {
+  id: string;
+  name: string;
+  type: string;
+  // Add other template properties as needed
+}
+
 interface PollBuilderProps {
   isEdit: boolean;
-  template?: any;
+  template?: Template;
 }
 
 export default function PollBuilder({ isEdit, template }: PollBuilderProps) {
@@ -26,13 +33,6 @@ export default function PollBuilder({ isEdit, template }: PollBuilderProps) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
-  useEffect(() => {
-    if (isEdit && template) {
-      setName(template.name);
-      loadOptions();
-    }
-  }, [isEdit, template]);
-
   const loadOptions = async () => {
     const { data } = await supabase
       .from("poll_options")
@@ -41,6 +41,13 @@ export default function PollBuilder({ isEdit, template }: PollBuilderProps) {
       .order("order_index");
     setOptions(data || []);
   };
+
+  useEffect(() => {
+    if (isEdit && template) {
+      setName(template.name); // eslint-disable-line react-hooks/set-state-in-effect
+      loadOptions();
+    }
+  }, [isEdit, template]);
 
   const addOption = () => {
     setOptions([...options, { option_text: "", order_index: options.length }]);

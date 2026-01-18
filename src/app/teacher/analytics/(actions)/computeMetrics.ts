@@ -2,6 +2,14 @@
 
 import { createClient } from "@supabase/supabase-js";
 
+interface QuizAnswerData {
+  user_id: string;
+  answer: string;
+  quiz_questions: {
+    correct_answer: string;
+  } | null;
+}
+
 export async function computeMetrics(sessionId: string) {
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -32,7 +40,7 @@ export async function computeMetrics(sessionId: string) {
       .eq("session_id", sessionId);
 
     const scores: { [key: string]: number } = {};
-    answers?.forEach((a: any) => {
+    answers?.forEach((a: QuizAnswerData) => {
       if (!scores[a.user_id]) scores[a.user_id] = 0;
       if (a.answer === a.quiz_questions?.correct_answer) scores[a.user_id]++;
     });

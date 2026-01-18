@@ -1,11 +1,5 @@
 import { Server as HTTPServer } from "http";
 import { Server as SocketServer } from "socket.io";
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 export function setupSocket(server: HTTPServer) {
   const io = new SocketServer(server, {

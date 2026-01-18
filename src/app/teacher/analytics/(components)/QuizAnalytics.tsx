@@ -4,17 +4,42 @@ import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 import BarChart from "./BarChart";
 
-interface QuizAnalyticsProps {
-  session: any;
+interface Session {
+  id: string;
+  // Add other session properties as needed
 }
 
+interface LeaderboardEntry {
+  userId: string;
+  score: number;
+}
+
+interface ScoreData {
+  label: string;
+  value: number;
+}
+
+interface QuizAnswer {
+  user_id: string;
+  question_id: string;
+  answer: string;
+  quiz_questions: {
+    correct_answer: string;
+  } | null;
+}
+
+interface QuizAnalyticsProps {
+  session: Session;
+}
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
 export default function QuizAnalytics({ session }: QuizAnalyticsProps) {
-  const [leaderboard, setLeaderboard] = useState<any[]>([]);
-  const [scores, setScores] = useState<any[]>([]);
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [scores, setScores] = useState<ScoreData[]>([]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -25,7 +50,7 @@ export default function QuizAnalytics({ session }: QuizAnalyticsProps) {
         .eq("session_id", session.id);
 
       const scoresMap: { [key: string]: { correct: number; total: number } } = {};
-      answers?.forEach((a: any) => {
+      answers?.forEach((a: QuizAnswer) => {
         if (!scoresMap[a.user_id]) scoresMap[a.user_id] = { correct: 0, total: 0 };
         scoresMap[a.user_id].total++;
         if (a.answer === a.quiz_questions?.correct_answer) scoresMap[a.user_id].correct++;

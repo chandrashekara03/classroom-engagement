@@ -14,9 +14,16 @@ interface Question {
   order_index: number;
 }
 
+interface Template {
+  id: string;
+  name: string;
+  type: string;
+  // Add other template properties as needed
+}
+
 interface QuizBuilderProps {
   isEdit: boolean;
-  template?: any;
+  template?: Template;
 }
 
 export default function QuizBuilder({ isEdit, template }: QuizBuilderProps) {
@@ -28,13 +35,6 @@ export default function QuizBuilder({ isEdit, template }: QuizBuilderProps) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
-  useEffect(() => {
-    if (isEdit && template) {
-      setName(template.name);
-      loadQuestions();
-    }
-  }, [isEdit, template]);
-
   const loadQuestions = async () => {
     const { data } = await supabase
       .from("quiz_questions")
@@ -43,6 +43,13 @@ export default function QuizBuilder({ isEdit, template }: QuizBuilderProps) {
       .order("order_index");
     setQuestions(data || []);
   };
+
+  useEffect(() => {
+    if (isEdit && template) {
+      setName(template.name); // eslint-disable-line react-hooks/set-state-in-effect
+      loadQuestions();
+    }
+  }, [isEdit, template]);
 
   const addQuestion = () => {
     setQuestions([...questions, {
@@ -53,7 +60,7 @@ export default function QuizBuilder({ isEdit, template }: QuizBuilderProps) {
     }]);
   };
 
-  const updateQuestion = (index: number, field: keyof Question, value: any) => {
+  const updateQuestion = (index: number, field: keyof Question, value: string | number | string[]) => {
     const newQuestions = [...questions];
     newQuestions[index] = { ...newQuestions[index], [field]: value };
     setQuestions(newQuestions);

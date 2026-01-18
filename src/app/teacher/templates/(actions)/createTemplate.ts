@@ -4,7 +4,16 @@ import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { revalidatePath } from "next/cache";
 
-export async function createTemplate(data: any) {
+interface TemplateData {
+  name: string;
+  type: string;
+  instructions?: string;
+  questions?: any[]; // Keep as any for now since it's complex
+  options?: any[]; // Keep as any for now since it's complex
+  fields?: any[]; // Keep as any for now since it's complex
+}
+
+export async function createTemplate(data: TemplateData) {
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

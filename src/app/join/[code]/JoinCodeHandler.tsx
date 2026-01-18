@@ -2,11 +2,20 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
-import { nanoid } from "nanoid";
 import { useStudentSession } from "../../session/(components)/useStudentSession";
 
+interface Session {
+  id: string;
+  code: string;
+  status: string;
+  templates?: {
+    title: string;
+    type: string;
+  };
+}
+
 export default function JoinCodeHandler({ code }: { code: string }) {
-  const [session, setSession] = useState<any>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [error, setError] = useState("");
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(true);
@@ -35,26 +44,38 @@ export default function JoinCodeHandler({ code }: { code: string }) {
       setSession(sessionData);
       setLoading(false);
     })();
-  }, [code]);
+  }, [code, supabase]);
 
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!session) return;
     setSubmitting(true);
     setError("");
     // Create student user if not exists
-    let studentId = localStorage.getItem("student_id");
-    if (!studentId) {
-      const { data: student } = await supabase.from("students").insert({ name, session_id: session.id }).select().single();
-      if (student && student.id) {
-        studentId = student.id as string;
-        localStorage.setItem("student_id", studentId);
+    let studentId: string;
+    const existingStudentId = localStorage.getItem("student_id");
+    if (existingStudentId) {
+      studentId = existingStudentId;
+    } else {
+      const { data: student, error: insertError } = await supabase.from("students").insert({ name, session_id: session.id }).select().single();
+      if (insertError || !student) {
+        setError("Failed to create student profile");
+        setSubmitting(false);
+        return;
       }
+      studentId = student.id;
+      localStorage.setItem("student_id", studentId);
     }
 
     // Add to session participants
-    await supabase.from("session_participants").insert({ session_id: session.id, student_id: studentId });
+    const { data: participant, error: participantError } = await supabase.from("session_participants").insert({ session_id: session.id, student_id: studentId }).select().single();
+    if (participantError || !participant) {
+      setError("Failed to join session");
+      setSubmitting(false);
+      return;
+    }
 
-    setStudentSession({ student_id: studentId, session_id: session.id });
+    setStudentSession({ student_id: studentId, participant_id: participant.id, session_id: session.id, name });
     router.push(`/session/${session.id}`);
   };
 

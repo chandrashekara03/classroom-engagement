@@ -5,21 +5,26 @@ import { createClient } from "@supabase/supabase-js";
 import { socketManager } from "@/lib/socket";
 import { useStudentSession } from "./useStudentSession";
 
+interface Question {
+  id: string;
+  question_text: string;
+  options: string[];
+  // Add other question properties as needed
+}
+
 export default function StudentSessionView({ sessionId }: { sessionId: string }) {
-  const [questions, setQuestions] = useState<any[]>([]);
+  const [questions, setQuestions] = useState<Question[]>([]);
   const [current, setCurrent] = useState<number|null>(null);
   const [answer, setAnswer] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [waiting, setWaiting] = useState(false);
   const [ended, setEnded] = useState(false);
-  const [result, setResult] = useState<any>(null);
   const [sessionStatus, setSessionStatus] = useState<string>("live");
-  const [timeOffset, setTimeOffset] = useState(0);
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
-  const { student_id, participant_id } = useStudentSession();
+  const { student_id } = useStudentSession();
 
   useEffect(() => {
     socketManager.connect(sessionId);
@@ -32,10 +37,8 @@ export default function StudentSessionView({ sessionId }: { sessionId: string })
     syncTime();
     const timeInterval = setInterval(syncTime, 30000); // every 30s
 
-    socketManager.on("time-sync", (payload) => {
-      const serverTime = payload.serverTime;
-      const clientTime = Date.now();
-      setTimeOffset(serverTime - clientTime);
+    socketManager.on("time-sync", (_payload) => {
+      // Latency compensation: sync time (removed unused variables)
     });
 
     // Event handlers
@@ -68,7 +71,7 @@ export default function StudentSessionView({ sessionId }: { sessionId: string })
       clearInterval(timeInterval);
       clearInterval(syncInterval);
     };
-  }, [sessionId, sessionStatus]);
+  }, [sessionId, sessionStatus, supabase]);
 
   useEffect(() => {
     (async () => {
@@ -86,7 +89,7 @@ export default function StudentSessionView({ sessionId }: { sessionId: string })
         setQuestions(session.activity_templates.settings.questions);
       }
     })();
-  }, [sessionId]);
+  }, [sessionId, supabase]);
 
   const submitAnswer = async () => {
     setSubmitted(true); // Optimistic UI
@@ -113,7 +116,7 @@ export default function StudentSessionView({ sessionId }: { sessionId: string })
         <div className="glass p-8 text-center animate-fade-in">
           <div className="text-red-500 text-6xl mb-4">⚠️</div>
           <h1 className="text-2xl font-bold mb-2 text-neutral-900 dark:text-neutral-100">Session Not Found</h1>
-          <p className="text-neutral-600 dark:text-neutral-400">The session code you entered doesn't exist or has expired.</p>
+          <p className="text-neutral-600 dark:text-neutral-400">The session code you entered doesn&apos;t exist or has expired.</p>
         </div>
       </div>
     );
