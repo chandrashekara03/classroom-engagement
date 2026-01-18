@@ -47,30 +47,36 @@ export default function QuizTemplateBuilder() {
     setSaving(true);
     setError("");
     try {
-      // Insert activity_template
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      // Insert template
       const { data: template, error: templateError } = await supabase
-        .from("activity_templates")
+        .from("templates")
         .insert([
           {
+            teacher_id: user.id,
             type: "quiz",
             title,
-            settings: { questions },
+            data: { questions },
           },
         ])
         .select()
         .single();
       if (templateError) throw templateError;
+
       // Insert quiz_questions
-      for (const [order_index, q] of questions.entries()) {
+      for (const [index, q] of questions.entries()) {
         await supabase.from("quiz_questions").insert({
-          activity_template_id: template.id,
-          question_text: q.text,
+          template_id: template.id,
+          question: q.text,
           options: q.type === "mcq" ? q.options : null,
           correct_answer: q.type === "mcq" ? q.correct.join(",") : q.correct,
-          order_index,
+          "order": index,
         });
       }
-      router.push("/teacher/dashboard");
+      router.push("/teacher/templates");
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -79,84 +85,140 @@ export default function QuizTemplateBuilder() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-8">
-      <h1 className="text-2xl font-bold mb-4">New Quiz Template</h1>
-      <input
-        className="border p-2 w-full mb-4"
-        placeholder="Quiz Title"
-        value={title}
-        onChange={e => setTitle(e.target.value)}
-      />
-      <div className="space-y-6">
+    <div className="space-y-6">
+      {/* Quiz Title */}
+      <div className="glass p-6 animate-fade-in">
+        <label className="block text-sm font-medium mb-2 text-neutral-700 dark:text-neutral-300">
+          Quiz Title
+        </label>
+        <input
+          className="w-full glass border-0 p-4 rounded-xl text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
+          placeholder="Enter quiz title..."
+          value={title}
+          onChange={e => setTitle(e.target.value)}
+        />
+      </div>
+
+      {/* Questions */}
+      <div className="space-y-4">
         {questions.map((q, idx) => (
-          <div key={q.id} className="border rounded p-4">
-            <div className="flex justify-between items-center mb-2">
-              <span className="font-semibold">Question {idx + 1}</span>
-              <button type="button" className="text-red-500" onClick={() => removeQuestion(q.id)}>
-                Remove
+          <div key={q.id} className="glass p-6 animate-fade-in rounded-xl" style={{ animationDelay: `${idx * 100}ms` }}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+                Question {idx + 1}
+              </h3>
+              <button
+                type="button"
+                className="text-red-500 hover:text-red-700 transition-colors p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
+                onClick={() => removeQuestion(q.id)}
+              >
+                🗑️ Remove
               </button>
             </div>
-            <input
-              className="border p-2 w-full mb-2"
-              placeholder="Question text"
-              value={q.text}
-              onChange={e => updateQuestion(q.id, { text: e.target.value })}
-            />
-            <select
-              className="border p-2 w-full mb-2"
-              value={q.type}
-              onChange={e => updateQuestion(q.id, { type: e.target.value })}
-            >
-              {QUESTION_TYPES.map(t => (
-                <option key={t.value} value={t.value}>{t.label}</option>
-              ))}
-            </select>
-            {q.type === "mcq" && (
-              <div className="mb-2">
-                <div className="font-medium mb-1">Options</div>
-                {q.options.map((opt: string, i: number) => (
-                  <div key={i} className="flex gap-2 mb-1">
-                    <input
-                      className="border p-1 flex-1"
-                      value={opt}
-                      onChange={e => {
-                        const opts = [...q.options];
-                        opts[i] = e.target.value;
-                        updateQuestion(q.id, { options: opts });
-                      }}
-                    />
-                    <button type="button" onClick={() => {
-                      const opts = q.options.filter((_: any, idx: number) => idx !== i);
-                      updateQuestion(q.id, { options: opts });
-                    }}>Remove</button>
-                  </div>
+
+            {/* Question Text */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-2 text-neutral-700 dark:text-neutral-300">
+                Question Text
+              </label>
+              <textarea
+                className="w-full glass border-0 p-4 rounded-xl text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                placeholder="Enter your question..."
+                value={q.text}
+                onChange={e => updateQuestion(q.id, { text: e.target.value })}
+                rows={3}
+              />
+            </div>
+
+            {/* Question Type */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-2 text-neutral-700 dark:text-neutral-300">
+                Question Type
+              </label>
+              <select
+                className="w-full glass border-0 p-4 rounded-xl text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={q.type}
+                onChange={e => updateQuestion(q.id, { type: e.target.value })}
+              >
+                {QUESTION_TYPES.map(t => (
+                  <option key={t.value} value={t.value}>{t.label}</option>
                 ))}
-                <button type="button" className="text-blue-500" onClick={() => updateQuestion(q.id, { options: [...q.options, ""] })}>
-                  Add Option
+              </select>
+            </div>
+
+            {/* MCQ Options */}
+            {q.type === "mcq" && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-3 text-neutral-700 dark:text-neutral-300">
+                  Answer Options
+                </label>
+                <div className="space-y-2">
+                  {q.options.map((opt: string, i: number) => (
+                    <div key={i} className="flex gap-2">
+                      <input
+                        className="flex-1 glass border-0 p-3 rounded-xl text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        value={opt}
+                        placeholder={`Option ${i + 1}`}
+                        onChange={e => {
+                          const opts = [...q.options];
+                          opts[i] = e.target.value;
+                          updateQuestion(q.id, { options: opts });
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="text-red-500 hover:text-red-700 transition-colors p-3 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl"
+                        onClick={() => {
+                          const opts = q.options.filter((_: any, idx: number) => idx !== i);
+                          updateQuestion(q.id, { options: opts });
+                        }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  className="mt-3 text-blue-600 hover:text-blue-700 transition-colors font-medium"
+                  onClick={() => updateQuestion(q.id, { options: [...q.options, ""] })}
+                >
+                  ➕ Add Option
                 </button>
-                <div className="mt-2">
-                  <label className="font-medium">Correct Option(s):</label>
+
+                {/* Correct Answers */}
+                <div className="mt-4">
+                  <label className="block text-sm font-medium mb-2 text-neutral-700 dark:text-neutral-300">
+                    Correct Answer(s)
+                  </label>
                   <select
                     multiple
-                    className="border p-1 w-full"
+                    className="w-full glass border-0 p-4 rounded-xl text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-green-500 min-h-[120px]"
                     value={q.correct}
                     onChange={e => {
                       const selected = Array.from(e.target.selectedOptions, o => o.value);
                       updateQuestion(q.id, { correct: selected });
                     }}
                   >
-                    {q.options.map((opt: string, i: number) => (
+                    {q.options.filter(opt => opt.trim()).map((opt: string, i: number) => (
                       <option key={i} value={opt}>{opt}</option>
                     ))}
                   </select>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+                    Hold Ctrl/Cmd to select multiple correct answers
+                  </p>
                 </div>
               </div>
             )}
+
+            {/* Boolean Options */}
             {q.type === "boolean" && (
-              <div className="mb-2">
-                <label className="font-medium">Correct Answer:</label>
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2 text-neutral-700 dark:text-neutral-300">
+                  Correct Answer
+                </label>
                 <select
-                  className="border p-1 w-full"
+                  className="w-full glass border-0 p-4 rounded-xl text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-green-500"
                   value={q.correct}
                   onChange={e => updateQuestion(q.id, { correct: e.target.value })}
                 >
@@ -165,21 +227,30 @@ export default function QuizTemplateBuilder() {
                 </select>
               </div>
             )}
+
+            {/* Short Answer */}
             {q.type === "short" && (
-              <div className="mb-2">
-                <label className="font-medium">Correct Answer (optional):</label>
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2 text-neutral-700 dark:text-neutral-300">
+                  Correct Answer (Optional)
+                </label>
                 <input
-                  className="border p-1 w-full"
+                  className="w-full glass border-0 p-4 rounded-xl text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-green-500"
                   value={q.correct}
+                  placeholder="Enter the expected answer..."
                   onChange={e => updateQuestion(q.id, { correct: e.target.value })}
                 />
               </div>
             )}
-            <div className="mb-2">
-              <label className="font-medium">Points:</label>
+
+            {/* Points */}
+            <div>
+              <label className="block text-sm font-medium mb-2 text-neutral-700 dark:text-neutral-300">
+                Points
+              </label>
               <input
                 type="number"
-                className="border p-1 w-20"
+                className="w-24 glass border-0 p-3 rounded-xl text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-purple-500 text-center font-semibold"
                 value={q.points}
                 min={1}
                 onChange={e => updateQuestion(q.id, { points: Number(e.target.value) })}
@@ -188,18 +259,36 @@ export default function QuizTemplateBuilder() {
           </div>
         ))}
       </div>
-      <button type="button" className="mt-4 bg-blue-600 text-white px-4 py-2 rounded" onClick={addQuestion}>
-        Add Question
-      </button>
-      <button
-        type="button"
-        className="mt-4 ml-4 bg-green-600 text-white px-4 py-2 rounded"
-        onClick={handleSave}
-        disabled={saving}
-      >
-        {saving ? "Saving..." : "Save Quiz Template"}
-      </button>
-      {error && <div className="text-red-500 mt-2">{error}</div>}
+
+      {/* Add Question Button */}
+      <div className="glass p-6 animate-fade-in">
+        <button
+          type="button"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 px-6 rounded-xl font-semibold transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg flex items-center justify-center gap-2"
+          onClick={addQuestion}
+        >
+          ➕ Add Question
+        </button>
+      </div>
+
+      {/* Save Actions */}
+      <div className="glass p-6 animate-fade-in">
+        <div className="flex gap-4">
+          <button
+            type="button"
+            className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-neutral-400 text-white py-4 px-6 rounded-xl font-semibold transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg disabled:cursor-not-allowed disabled:hover:scale-100"
+            onClick={handleSave}
+            disabled={saving || !title.trim() || questions.length === 0}
+          >
+            {saving ? "💾 Saving..." : "💾 Save Quiz Template"}
+          </button>
+        </div>
+        {error && (
+          <div className="mt-4 p-4 glass border-l-4 border-red-500 text-red-700 dark:text-red-300">
+            ⚠️ {error}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

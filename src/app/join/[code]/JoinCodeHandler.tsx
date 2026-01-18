@@ -21,7 +21,7 @@ export default function JoinCodeHandler({ code }: { code: string }) {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const { data: sessionData } = await supabase.from("sessions").select("*").eq("join_code", code).single();
+      const { data: sessionData } = await supabase.from("sessions").select("*").eq("code", code).single();
       if (!sessionData) {
         setError("Invalid join code");
         setLoading(false);
@@ -44,21 +44,17 @@ export default function JoinCodeHandler({ code }: { code: string }) {
     // Create student user if not exists
     let studentId = localStorage.getItem("student_id");
     if (!studentId) {
-      studentId = nanoid();
-      await supabase.from("users").upsert({ id: studentId, name, role: "student", email: null });
-      localStorage.setItem("student_id", studentId);
+      const { data: student } = await supabase.from("students").insert({ name, session_id: session.id }).select().single();
+      if (student && student.id) {
+        studentId = student.id as string;
+        localStorage.setItem("student_id", studentId);
+      }
     }
-    // Insert into session_participants
-    const { data: participant, error: partErr } = await supabase.from("session_participants").insert({
-      session_id: session.id,
-      user_id: studentId,
-    }).select().single();
-    if (partErr) {
-      setError("Could not join session");
-      setSubmitting(false);
-      return;
-    }
-    setStudentSession({ student_id: studentId, session_id: session.id, join_code: code, participant_id: participant.id });
+
+    // Add to session participants
+    await supabase.from("session_participants").insert({ session_id: session.id, student_id: studentId });
+
+    setStudentSession({ student_id: studentId, session_id: session.id });
     router.push(`/session/${session.id}`);
   };
 

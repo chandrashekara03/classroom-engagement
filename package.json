@@ -6,7 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "echo 'Tests passed (stub)'",
+    "version:patch": "standard-version --release-as patch",
+    "version:minor": "standard-version --release-as minor",
+    "version:major": "standard-version --release-as major",
+    "release": "git push --follow-tags origin main"
   },
   "dependencies": {
     "@supabase/ssr": "^0.8.0",
@@ -15,11 +20,14 @@
     "date-fns": "^4.1.0",
     "framer-motion": "^12.26.2",
     "jotai": "^2.16.2",
+    "jszip": "^3.10.1",
     "nanoid": "^5.1.6",
     "next": "16.1.3",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",
+    "xlsx": "^0.18.5",
     "zustand": "^5.0.10"
   },
   "devDependencies": {
@@ -29,6 +37,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.1.3",
+    "standard-version": "^9.5.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

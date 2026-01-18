@@ -14,12 +14,16 @@ export default function StartSessionButton({ templateId }: { templateId: string 
 
   const handleStart = async () => {
     setLoading(true);
-    const join_code = nanoid(6);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const code = nanoid(6);
     const { data, error } = await supabase.from("sessions").insert([
       {
-        activity_template_id: templateId,
-        status: "live",
-        join_code,
+        teacher_id: user.id,
+        template_id: templateId,
+        status: "active",
+        code,
         started_at: new Date().toISOString(),
       },
     ]).select().single();

@@ -34,3 +34,33 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Release Process
+
+### Cutting a Release
+
+1. Ensure all changes are committed and pushed to main branch.
+2. Use conventional commit messages (e.g., `feat: add new feature`, `fix: resolve bug`).
+3. Run the appropriate version script:
+   - `npm run version:patch` for bug fixes
+   - `npm run version:minor` for new features
+   - `npm run version:major` for breaking changes
+4. This will:
+   - Update package.json version
+   - Generate CHANGELOG.md
+   - Create git commit and tag
+5. Push tags: `npm run release`
+
+### Publishing Release Tags
+
+- Tags are automatically created by standard-version
+- Push to GitHub triggers CI workflow
+- CI publishes changelog and triggers Vercel deployment
+
+### Version Propagation to Vercel
+
+- NEXT_PUBLIC_APP_VERSION is set from package.json version
+- Main branch deploys to production
+- Staging branch deploys to preview
+- Feature branches create ephemeral previews
+- Version visible in /about route

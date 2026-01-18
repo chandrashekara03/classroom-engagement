@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { redirect } from "next/navigation";
 import { ReactNode } from "react";
+import TeacherNav from "./(components)/TeacherNav";
 
 export const dynamic = "force-dynamic";
 
@@ -27,5 +28,11 @@ export default async function TeacherLayout({ children }: { children: ReactNode 
     redirect("/login");
   }
   // Optionally, check if user is a teacher here
-  return <>{children}</>;
+
+  return (
+    <>
+      <TeacherNav />
+      {children}
+    </>
+  );
 }

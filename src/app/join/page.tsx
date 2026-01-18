@@ -18,19 +18,27 @@ export default function JoinPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <form onSubmit={handleSubmit} className="bg-white p-8 rounded shadow w-96 space-y-4">
-        <h1 className="text-2xl font-bold mb-4">Join a Session</h1>
-        <input
-          type="text"
-          placeholder="Enter join code"
-          value={code}
-          onChange={e => setCode(e.target.value)}
-          className="w-full border p-2 rounded"
-          required
-        />
-        {error && <div className="text-red-500 text-sm">{error}</div>}
-        <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded font-semibold">Join</button>
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <form onSubmit={handleSubmit} className="glass w-full max-w-md p-8 animate-fade-in text-center">
+        <h1 className="text-2xl font-bold mb-4 text-neutral-900 dark:text-neutral-100">Join a Session</h1>
+        <p className="text-neutral-600 dark:text-neutral-400 mb-6">Enter the session code provided by your teacher</p>
+        <div className="space-y-4">
+          <input
+            type="text"
+            placeholder="Session Code"
+            value={code}
+            onChange={e => setCode(e.target.value)}
+            className="w-full glass border-0 p-3 rounded-xl text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-green-500 text-center text-lg font-mono tracking-widest"
+            required
+          />
+          {error && <div className="text-red-500 text-sm">{error}</div>}
+          <button
+            type="submit"
+            className="w-full bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-xl font-semibold transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg"
+          >
+            Join Session
+          </button>
+        </div>
       </form>
     </div>
   );
