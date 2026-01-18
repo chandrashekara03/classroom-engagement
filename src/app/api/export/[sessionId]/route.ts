@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import * as XLSX from "xlsx";
 import JSZip from "jszip";
 
@@ -9,7 +9,7 @@ interface Template {
 }
 
 interface Session {
-  templates: Template;
+  templates: Template[];
 }
 
 interface QuizAnswer {
@@ -35,6 +35,18 @@ interface FeedbackResponse {
   created_at: string;
 }
 
+interface LeaderboardEntry {
+  student_id: string;
+  score: number;
+  correct: number;
+  total: number;
+}
+
+interface PollResult {
+  option: string;
+  count: number;
+}
+
 export async function GET(request: NextRequest, { params }: { params: Promise<{ sessionId: string }> }) {
   const { sessionId } = await params;
   const { searchParams } = new URL(request.url);
@@ -55,7 +67,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
   if (!session) return NextResponse.json({ error: "Session not found" }, { status: 404 });
 
-  const type = (session as Session).templates?.type;
+  const type = (session as Session).templates?.[0]?.type;
 
   if (all) {
     // Export all as ZIP
@@ -85,7 +97,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     });
   } else {
     // Single export
-    let data: QuizAnswer[] | PollResponse[] | FeedbackResponse[] = [];
+    let data: QuizAnswer[] | PollResponse[] | FeedbackResponse[] | LeaderboardEntry[] | PollResult[] = [];
     let filename = "";
 
     if (type === "quiz") {
@@ -115,7 +127,7 @@ interface QuizAnswerData {
   is_correct: boolean;
 }
 
-async function getQuizLeaderboard(supabase: ReturnType<typeof createClient>, sessionId: string) {
+async function getQuizLeaderboard(supabase: SupabaseClient, sessionId: string) {
   const { data: answers } = await supabase
     .from("quiz_answers")
     .select("student_id, answer, is_correct")
@@ -136,7 +148,7 @@ async function getQuizLeaderboard(supabase: ReturnType<typeof createClient>, ses
   })).sort((a, b) => b.score - a.score);
 }
 
-async function getPollResults(supabase: ReturnType<typeof createClient>, sessionId: string) {
+async function getPollResults(supabase: SupabaseClient, sessionId: string) {
   const { data: votes } = await supabase
     .from("poll_votes")
     .select("option_id, poll_options(option_text)")
@@ -151,7 +163,7 @@ async function getPollResults(supabase: ReturnType<typeof createClient>, session
   return Object.entries(counts).map(([option, count]) => ({ option, count }));
 }
 
-async function getFeedbackResponses(supabase: ReturnType<typeof createClient>, sessionId: string) {
+async function getFeedbackResponses(supabase: SupabaseClient, sessionId: string) {
   const { data } = await supabase
     .from("feedback_responses")
     .select("*")
@@ -159,7 +171,7 @@ async function getFeedbackResponses(supabase: ReturnType<typeof createClient>, s
   return data || [];
 }
 
-function generateFile(data: QuizAnswer[] | PollResponse[] | FeedbackResponse[] | Record<string, unknown>[], format: string) {
+function generateFile(data: QuizAnswer[] | PollResponse[] | FeedbackResponse[] | LeaderboardEntry[] | PollResult[] | Record<string, unknown>[], format: string) {
   if (format === "xlsx") {
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();

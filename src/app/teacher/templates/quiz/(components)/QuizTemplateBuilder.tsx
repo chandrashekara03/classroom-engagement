@@ -10,9 +10,18 @@ const QUESTION_TYPES = [
   { value: "short", label: "Short Answer" },
 ];
 
+interface Question {
+  id: string;
+  type: string;
+  text: string;
+  options: string[];
+  correct: string[];
+  points: number;
+}
+
 export default function QuizTemplateBuilder() {
   const [title, setTitle] = useState("");
-  const [questions, setQuestions] = useState<any[]>([]);
+  const [questions, setQuestions] = useState<Question[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
@@ -39,7 +48,7 @@ export default function QuizTemplateBuilder() {
     setQuestions(questions.filter(q => q.id !== id));
   };
 
-  const updateQuestion = (id: string, data: any) => {
+  const updateQuestion = (id: string, data: Partial<Question>) => {
     setQuestions(questions.map(q => (q.id === id ? { ...q, ...data } : q)));
   };
 
@@ -77,8 +86,8 @@ export default function QuizTemplateBuilder() {
         });
       }
       router.push("/teacher/templates");
-    } catch (e: any) {
-      setError(e.message);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "An error occurred");
     } finally {
       setSaving(false);
     }
@@ -169,7 +178,7 @@ export default function QuizTemplateBuilder() {
                         type="button"
                         className="text-red-500 hover:text-red-700 transition-colors p-3 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl"
                         onClick={() => {
-                          const opts = q.options.filter((_: any, idx: number) => idx !== i);
+                          const opts = q.options.filter((_: string, idx: number) => idx !== i);
                           updateQuestion(q.id, { options: opts });
                         }}
                       >
@@ -219,8 +228,8 @@ export default function QuizTemplateBuilder() {
                 </label>
                 <select
                   className="w-full glass border-0 p-4 rounded-xl text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-green-500"
-                  value={q.correct}
-                  onChange={e => updateQuestion(q.id, { correct: e.target.value })}
+                  value={q.correct[0] || ""}
+                  onChange={e => updateQuestion(q.id, { correct: [e.target.value] })}
                 >
                   <option value="true">True</option>
                   <option value="false">False</option>
@@ -236,9 +245,9 @@ export default function QuizTemplateBuilder() {
                 </label>
                 <input
                   className="w-full glass border-0 p-4 rounded-xl text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 dark:placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-green-500"
-                  value={q.correct}
+                  value={q.correct[0] || ""}
                   placeholder="Enter the expected answer..."
-                  onChange={e => updateQuestion(q.id, { correct: e.target.value })}
+                  onChange={e => updateQuestion(q.id, { correct: [e.target.value] })}
                 />
               </div>
             )}

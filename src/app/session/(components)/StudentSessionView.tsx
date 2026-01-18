@@ -37,13 +37,13 @@ export default function StudentSessionView({ sessionId }: { sessionId: string })
     syncTime();
     const timeInterval = setInterval(syncTime, 30000); // every 30s
 
-    socketManager.on("time-sync", (_payload) => {
-      // Latency compensation: sync time (removed unused variables)
+    socketManager.on("time-sync", () => {
+      // Latency compensation: sync time
     });
 
     // Event handlers
     socketManager.on("SESSION_START", () => setSessionStatus("live"));
-    socketManager.on("QUESTION_START", (payload) => {
+    socketManager.on("QUESTION_START", (payload: { index: number }) => {
       setCurrent(payload.index);
       setAnswer("");
       setSubmitted(false);
@@ -162,7 +162,7 @@ export default function StudentSessionView({ sessionId }: { sessionId: string })
             <span className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{current + 1}</span>
           </div>
           <h1 className="text-3xl font-bold mb-4 text-neutral-900 dark:text-neutral-100">Question {current + 1}</h1>
-          <p className="text-xl text-neutral-700 dark:text-neutral-300 leading-relaxed">{questions[current]?.text}</p>
+          <p className="text-xl text-neutral-700 dark:text-neutral-300 leading-relaxed">{questions[current]?.question_text}</p>
         </div>
 
         {!submitted ? (

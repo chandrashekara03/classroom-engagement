@@ -1,16 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
+import { nanoid } from "nanoid";
 import { createTemplate } from "../(actions)/createTemplate";
 import { updateTemplate } from "../(actions)/updateTemplate";
 
 interface Question {
   id?: string;
-  question_text: string;
+  type: string;
+  text: string;
   options: string[];
   correct_answer: number;
+  points: number;
   order_index: number;
 }
 
@@ -35,27 +38,31 @@ export default function QuizBuilder({ isEdit, template }: QuizBuilderProps) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
-  const loadQuestions = async () => {
+  const loadQuestions = useCallback(async () => {
+    if (!template) return;
     const { data } = await supabase
       .from("quiz_questions")
       .select("*")
       .eq("template_id", template.id)
       .order("order_index");
     setQuestions(data || []);
-  };
+  }, [template, supabase]);
 
   useEffect(() => {
     if (isEdit && template) {
       setName(template.name); // eslint-disable-line react-hooks/set-state-in-effect
       loadQuestions();
     }
-  }, [isEdit, template]);
+  }, [isEdit, template, loadQuestions]);
 
   const addQuestion = () => {
     setQuestions([...questions, {
-      question_text: "",
+      id: nanoid(),
+      type: "mcq",
+      text: "",
       options: ["", ""],
       correct_answer: 0,
+      points: 1,
       order_index: questions.length
     }]);
   };
@@ -83,10 +90,17 @@ export default function QuizBuilder({ isEdit, template }: QuizBuilderProps) {
   };
 
   const handleSave = async () => {
+    const transformedQuestions = questions.map(q => ({
+      question_text: q.text,
+      options: q.options,
+      correct_answer: q.correct_answer.toString(),
+      order_index: q.order_index,
+    }));
     if (isEdit) {
-      await updateTemplate(template.id, { name, type: "quiz", questions });
+      if (!template) return;
+      await updateTemplate(template.id, { name, type: "quiz", questions: transformedQuestions });
     } else {
-      await createTemplate({ name, type: "quiz", questions });
+      await createTemplate({ name, type: "quiz", questions: transformedQuestions });
     }
     router.push("/teacher/templates");
   };
@@ -111,8 +125,8 @@ export default function QuizBuilder({ isEdit, template }: QuizBuilderProps) {
               <input
                 type="text"
                 placeholder="Question text"
-                value={q.question_text}
-                onChange={(e) => updateQuestion(qIndex, "question_text", e.target.value)}
+                value={q.text}
+                onChange={(e) => updateQuestion(qIndex, "text", e.target.value)}
                 className="border p-2 w-full"
               />
             </div>

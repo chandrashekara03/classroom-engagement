@@ -20,7 +20,7 @@ export default function TestPage() {
       return;
     }
     try {
-      const { data, error } = await supabase.from('teachers').select('count').single();
+      const { error } = await supabase.from('teachers').select('count').single();
       if (error) throw error;
       addMessage("Supabase connected successfully");
       setSupabaseConnected(true);
@@ -30,7 +30,7 @@ export default function TestPage() {
     }
   };
 
-  const emitEvent = (event: string, payload: any) => {
+  const emitEvent = (event: string, payload: unknown) => {
     socketManager.emit(event, payload);
     addMessage(`Emitted ${event}: ${JSON.stringify(payload)}`);
   };
@@ -128,7 +128,7 @@ export default function TestPage() {
                 onClick={() => emitEvent("ANSWER_SUBMITTED", { questionIndex: 0, answer: "A" })}
                 className="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-xl font-semibold transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg"
               >
-                📝 Submit Answer "A"
+                📝 Submit Answer &quot;A&quot;
               </button>
             </div>
           </div>

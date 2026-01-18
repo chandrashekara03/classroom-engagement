@@ -18,7 +18,7 @@ interface PollAnswer {
   option_id: string;
   poll_options: {
     option_text: string;
-  } | null;
+  }[];
 }
 
 interface PollAnalyticsProps {
@@ -42,7 +42,7 @@ export default function PollAnalytics({ session }: PollAnalyticsProps) {
 
       const counts: { [key: string]: number } = {};
       answers?.forEach((a: PollAnswer) => {
-        const text = a.poll_options?.option_text || "Unknown";
+        const text = a.poll_options?.[0]?.option_text || "Unknown";
         counts[text] = (counts[text] || 0) + 1;
       });
 

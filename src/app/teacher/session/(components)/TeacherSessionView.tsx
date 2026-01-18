@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { socketManager } from "@/lib/socket";
 
@@ -32,27 +32,27 @@ export default function TeacherSessionView({ sessionId }: { sessionId: string })
   const [participantCount, setParticipantCount] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const updateStats = async () => {
+  const updateStats = useCallback(async () => {
     // Fetch current stats from Supabase
     const { data: answers } = await supabase.from("quiz_answers").select("*").eq("session_id", sessionId).eq("question_index", current);
     const total = answers?.length || 0;
     const answered = answers?.filter(a => a.answer !== null).length || 0;
     setStats({ total, answered });
-  };
+  }, [sessionId, current]);
 
   useEffect(() => {
     socketManager.connect(sessionId);
 
-    socketManager.on("ANSWER_SUBMITTED", (_payload) => {
+    socketManager.on("ANSWER_SUBMITTED", () => {
       // Update stats
       updateStats();
     });
 
-    socketManager.on("participant-update", (payload) => {
+    socketManager.on("participant-update", (payload: { count: number }) => {
       setParticipantCount(payload.count);
     });
 
-    socketManager.on("time-sync", (_payload) => {
+    socketManager.on("time-sync", () => {
       // Handle time sync if needed
     });
 
@@ -61,7 +61,7 @@ export default function TeacherSessionView({ sessionId }: { sessionId: string })
       socketManager.off("participant-update");
       socketManager.off("time-sync");
     };
-  }, [sessionId]);
+  }, [sessionId, updateStats]);
 
   useEffect(() => {
     // Fetch questions for this session

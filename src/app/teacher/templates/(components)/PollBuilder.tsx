@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import { createTemplate } from "../(actions)/createTemplate";
@@ -33,21 +33,22 @@ export default function PollBuilder({ isEdit, template }: PollBuilderProps) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
-  const loadOptions = async () => {
+  const loadOptions = useCallback(async () => {
+    if (!template) return;
     const { data } = await supabase
       .from("poll_options")
       .select("*")
       .eq("template_id", template.id)
       .order("order_index");
     setOptions(data || []);
-  };
+  }, [template, supabase]);
 
   useEffect(() => {
     if (isEdit && template) {
       setName(template.name); // eslint-disable-line react-hooks/set-state-in-effect
       loadOptions();
     }
-  }, [isEdit, template]);
+  }, [isEdit, template, loadOptions]);
 
   const addOption = () => {
     setOptions([...options, { option_text: "", order_index: options.length }]);
@@ -65,6 +66,7 @@ export default function PollBuilder({ isEdit, template }: PollBuilderProps) {
 
   const handleSave = async () => {
     if (isEdit) {
+      if (!template) return;
       await updateTemplate(template.id, { name, type: "poll", options });
     } else {
       await createTemplate({ name, type: "poll", options });

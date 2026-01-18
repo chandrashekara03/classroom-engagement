@@ -11,7 +11,7 @@ class SocketManager {
     this.socket.emit("join-room", sessionId);
 
     // Handle heartbeat
-    this.socket.on("heartbeat", (_data) => {
+    this.socket.on("heartbeat", () => {
       this.socket?.emit("heartbeat-response");
     });
   }

@@ -42,7 +42,7 @@ export default function TeacherSessionResults({ sessionId }: { sessionId: string
         setResults([]);
         return;
       }
-      const stats = questions.map((q: Question, _idx: number) => {
+      const stats = questions.map((q: Question) => {
         const qAnswers = answers.filter((a: Answer) => a.question_id === q.id);
         const correct = qAnswers.filter((a: Answer) => a.answer === q.correct).length;
         return {

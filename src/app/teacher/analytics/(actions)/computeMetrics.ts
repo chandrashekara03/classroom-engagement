@@ -7,7 +7,7 @@ interface QuizAnswerData {
   answer: string;
   quiz_questions: {
     correct_answer: string;
-  } | null;
+  }[];
 }
 
 export async function computeMetrics(sessionId: string) {
@@ -42,7 +42,7 @@ export async function computeMetrics(sessionId: string) {
     const scores: { [key: string]: number } = {};
     answers?.forEach((a: QuizAnswerData) => {
       if (!scores[a.user_id]) scores[a.user_id] = 0;
-      if (a.answer === a.quiz_questions?.correct_answer) scores[a.user_id]++;
+      if (a.answer === a.quiz_questions?.[0]?.correct_answer) scores[a.user_id]++;
     });
 
     const totalScores = Object.values(scores);

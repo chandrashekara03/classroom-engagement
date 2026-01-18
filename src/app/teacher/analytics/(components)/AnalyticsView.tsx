@@ -6,8 +6,10 @@ import FeedbackAnalytics from "./FeedbackAnalytics";
 
 interface Session {
   id: string;
+  status?: string;
   templates?: {
     type: string;
+    title?: string;
   };
   // Add other session properties as needed
 }

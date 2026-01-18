@@ -4,13 +4,32 @@ import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { revalidatePath } from "next/cache";
 
+interface QuizQuestion {
+  question_text: string;
+  options: string[];
+  correct_answer: string;
+  order_index: number;
+}
+
+interface PollOption {
+  option_text: string;
+  order_index: number;
+}
+
+interface FeedbackField {
+  field_name: string;
+  field_type: string;
+  required: boolean;
+  order_index: number;
+}
+
 interface TemplateData {
   name: string;
   type: string;
   instructions?: string;
-  questions?: any[]; // Keep as any for now since it's complex
-  options?: any[]; // Keep as any for now since it's complex
-  fields?: any[]; // Keep as any for now since it's complex
+  questions?: QuizQuestion[];
+  options?: PollOption[];
+  fields?: FeedbackField[];
 }
 
 export async function createTemplate(data: TemplateData) {
@@ -48,22 +67,26 @@ export async function createTemplate(data: TemplateData) {
   if (error) throw error;
 
   if (data.type === "quiz") {
-    for (const q of data.questions) {
-      await supabase.from("quiz_questions").insert({
-        template_id: template.id,
-        question: q.question_text,
-        options: q.options,
-        correct_answer: q.correct_answer,
-        "order": q.order_index,
-      });
+    if (data.questions) {
+      for (const q of data.questions) {
+        await supabase.from("quiz_questions").insert({
+          template_id: template.id,
+          question: q.question_text,
+          options: q.options,
+          correct_answer: q.correct_answer,
+          "order": q.order_index,
+        });
+      }
     }
   } else if (data.type === "poll") {
-    for (const opt of data.options) {
-      await supabase.from("poll_options").insert({
-        template_id: template.id,
-        option_text: opt.option_text,
-        "order": opt.order_index,
-      });
+    if (data.options) {
+      for (const opt of data.options) {
+        await supabase.from("poll_options").insert({
+          template_id: template.id,
+          option_text: opt.option_text,
+          "order": opt.order_index,
+        });
+      }
     }
   } else if (data.type === "feedback") {
     // Feedback fields stored in template data

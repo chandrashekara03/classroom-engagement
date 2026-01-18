@@ -18,7 +18,7 @@ export default function StartSessionButton({ templateId }: { templateId: string 
     if (!user) return;
 
     const code = nanoid(6);
-    const { data, error } = await supabase.from("sessions").insert([
+    const { data } = await supabase.from("sessions").insert([
       {
         teacher_id: user.id,
         template_id: templateId,

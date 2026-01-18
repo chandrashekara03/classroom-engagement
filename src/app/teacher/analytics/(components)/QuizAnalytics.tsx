@@ -25,7 +25,7 @@ interface QuizAnswer {
   answer: string;
   quiz_questions: {
     correct_answer: string;
-  } | null;
+  }[];
 }
 
 interface QuizAnalyticsProps {
@@ -53,7 +53,7 @@ export default function QuizAnalytics({ session }: QuizAnalyticsProps) {
       answers?.forEach((a: QuizAnswer) => {
         if (!scoresMap[a.user_id]) scoresMap[a.user_id] = { correct: 0, total: 0 };
         scoresMap[a.user_id].total++;
-        if (a.answer === a.quiz_questions?.correct_answer) scoresMap[a.user_id].correct++;
+        if (a.answer === a.quiz_questions?.[0]?.correct_answer) scoresMap[a.user_id].correct++;
       });
 
       const leaderboardData = Object.entries(scoresMap).map(([userId, score]) => ({

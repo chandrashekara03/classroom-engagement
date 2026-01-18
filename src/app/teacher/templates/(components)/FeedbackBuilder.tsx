@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import { createTemplate } from "../(actions)/createTemplate";
@@ -8,8 +8,8 @@ import { updateTemplate } from "../(actions)/updateTemplate";
 
 interface FeedbackField {
   id?: string;
+  field_name: string;
   field_type: string;
-  field_label: string;
   required: boolean;
   order_index: number;
 }
@@ -39,27 +39,28 @@ export default function FeedbackBuilder({ isEdit, template }: FeedbackBuilderPro
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
-  const loadFields = async () => {
+  const loadFields = useCallback(async () => {
+    if (!template) return;
     const { data } = await supabase
       .from("feedback_fields")
       .select("*")
       .eq("template_id", template.id)
       .order("order_index");
     setFields(data || []);
-  };
+  }, [template, supabase]);
 
   useEffect(() => {
     if (isEdit && template) {
       setName(template.name); // eslint-disable-line react-hooks/set-state-in-effect
-      setInstructions(template.settings?.instructions || ""); // eslint-disable-line react-hooks/set-state-in-effect
+      setInstructions(template.settings?.instructions || "");
       loadFields();
     }
-  }, [isEdit, template]);
+  }, [isEdit, template, loadFields]);
 
   const addField = () => {
     setFields([...fields, {
       field_type: "text",
-      field_label: "",
+      field_name: "",
       required: false,
       order_index: fields.length
     }]);
@@ -77,6 +78,7 @@ export default function FeedbackBuilder({ isEdit, template }: FeedbackBuilderPro
 
   const handleSave = async () => {
     if (isEdit) {
+      if (!template) return;
       await updateTemplate(template.id, { name, type: "feedback", instructions, fields });
     } else {
       await createTemplate({ name, type: "feedback", instructions, fields });
@@ -113,8 +115,8 @@ export default function FeedbackBuilder({ isEdit, template }: FeedbackBuilderPro
               <input
                 type="text"
                 placeholder="Field label"
-                value={field.field_label}
-                onChange={(e) => updateField(index, "field_label", e.target.value)}
+                value={field.field_name}
+                onChange={(e) => updateField(index, "field_name", e.target.value)}
                 className="border p-2 w-full"
               />
             </div>
