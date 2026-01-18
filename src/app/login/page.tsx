@@ -20,14 +20,46 @@ export default function LoginPage() {
     if (error) {
       setError(error.message);
     } else {
-      router.push("/teacher/dashboard");
+      // Check if user is admin or teacher and redirect accordingly
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // Check if admin
+        const adminCheck = await fetch('/api/check-role', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: user.id, role: 'admin' })
+        });
+        const adminResult = await adminCheck.json();
+
+        if (adminResult.isRole) {
+          router.push("/admin/dashboard");
+          return;
+        }
+
+        // Check if teacher
+        const teacherCheck = await fetch('/api/check-role', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: user.id, role: 'teacher' })
+        });
+        const teacherResult = await teacherCheck.json();
+
+        if (teacherResult.isRole) {
+          router.push("/teacher/dashboard");
+          return;
+        }
+
+        // If neither admin nor teacher, sign out
+        await supabase.auth.signOut();
+        setError("Access denied. You are not authorized to use this system.");
+      }
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <form onSubmit={handleLogin} className="glass w-full max-w-md p-8 animate-fade-in">
-        <h1 className="text-2xl font-bold mb-6 text-center text-neutral-900 dark:text-neutral-100">Teacher Login</h1>
+        <h1 className="text-2xl font-bold mb-6 text-center text-neutral-900 dark:text-neutral-100">Login</h1>
         <div className="space-y-4">
           <input
             type="email"

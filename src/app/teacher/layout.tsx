@@ -27,7 +27,17 @@ export default async function TeacherLayout({ children }: { children: ReactNode 
   if (!session) {
     redirect("/login");
   }
-  // Optionally, check if user is a teacher here
+
+  // Check if user is a teacher
+  const { data: teacher } = await supabase
+    .from('teachers')
+    .select('id')
+    .eq('id', session.user.id)
+    .single();
+
+  if (!teacher) {
+    redirect("/login");
+  }
 
   return (
     <>

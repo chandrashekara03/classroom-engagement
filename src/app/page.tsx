@@ -17,6 +17,12 @@ export default function Home() {
             href="/login"
             className="block w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-xl font-semibold transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg"
           >
+            Admin Login
+          </Link>
+          <Link
+            href="/login"
+            className="block w-full bg-purple-600 hover:bg-purple-700 text-white py-3 px-6 rounded-xl font-semibold transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg"
+          >
             Teacher Login
           </Link>
           <Link

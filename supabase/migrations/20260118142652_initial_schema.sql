@@ -12,27 +12,16 @@ CREATE TABLE teachers (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Admin table
-CREATE TABLE admins (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  email TEXT UNIQUE NOT NULL,
-  password_hash TEXT NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
 -- Templates table (quiz, poll, feedback)
 CREATE TABLE templates (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   teacher_id UUID REFERENCES teachers(id) ON DELETE CASCADE,
-  admin_id UUID REFERENCES admins(id) ON DELETE CASCADE,
   type TEXT NOT NULL CHECK (type IN ('quiz', 'poll', 'feedback')),
   title TEXT NOT NULL,
   data JSONB NOT NULL DEFAULT '{}',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  deleted_at TIMESTAMP WITH TIME ZONE,
-  CHECK (teacher_id IS NOT NULL OR admin_id IS NOT NULL)
+  deleted_at TIMESTAMP WITH TIME ZONE
 );
 
 -- Quiz questions
@@ -59,14 +48,12 @@ CREATE TABLE poll_options (
 CREATE TABLE sessions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   teacher_id UUID REFERENCES teachers(id) ON DELETE CASCADE,
-  admin_id UUID REFERENCES admins(id) ON DELETE CASCADE,
   template_id UUID REFERENCES templates(id) ON DELETE CASCADE,
   code TEXT UNIQUE NOT NULL,
   status TEXT NOT NULL DEFAULT 'created' CHECK (status IN ('created', 'active', 'ended')),
   started_at TIMESTAMP WITH TIME ZONE,
   ended_at TIMESTAMP WITH TIME ZONE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  CHECK (teacher_id IS NOT NULL OR admin_id IS NOT NULL)
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Students (anonymous or named)
