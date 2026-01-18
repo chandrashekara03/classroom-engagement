@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createClient } from "@supabase/supabase-js";
 import { nanoid } from "nanoid";
 
 const QUESTION_TYPES = [
@@ -16,7 +16,10 @@ export default function QuizTemplateBuilder() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
-  const supabase = createClientComponentClient();
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
   const addQuestion = () => {
     setQuestions([

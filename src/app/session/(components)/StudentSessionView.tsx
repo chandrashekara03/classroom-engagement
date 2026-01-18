@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createClient } from "@supabase/supabase-js";
 import io from "socket.io-client";
 import { useStudentSession } from "./useStudentSession";
 
@@ -16,7 +16,10 @@ export default function StudentSessionView({ sessionId }: { sessionId: string })
   const [ended, setEnded] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [sessionStatus, setSessionStatus] = useState<string>("live");
-  const supabase = createClientComponentClient();
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
   const { student_id, participant_id } = useStudentSession();
 
   useEffect(() => {
@@ -61,12 +64,14 @@ export default function StudentSessionView({ sessionId }: { sessionId: string })
   const submitAnswer = async () => {
     setSubmitted(true);
     if (current === null) return;
-    await supabase.from("quiz_answers").insert({
-      question_id: questions[current].id,
-      session_id: sessionId,
-      user_id: student_id,
-      answer,
-    }).onConflict(["question_id", "session_id", "user_id"]).ignore();
+    await supabase.from("quiz_answers").upsert([
+      {
+        question_id: questions[current].id,
+        session_id: sessionId,
+        user_id: student_id,
+        answer,
+      }
+    ], { onConflict: "question_id,session_id,user_id" });
   };
 
   if (sessionStatus === "notfound") {

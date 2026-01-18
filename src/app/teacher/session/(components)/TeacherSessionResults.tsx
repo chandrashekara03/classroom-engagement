@@ -1,10 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createClient } from "@supabase/supabase-js";
 
 export default function TeacherSessionResults({ sessionId }: { sessionId: string }) {
   const [results, setResults] = useState<any>(null);
-  const supabase = createClientComponentClient();
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
   useEffect(() => {
     (async () => {
@@ -14,6 +17,10 @@ export default function TeacherSessionResults({ sessionId }: { sessionId: string
       const { data: session } = await supabase.from("sessions").select("*, activity_templates(*)").eq("id", sessionId).single();
       const questions = session?.activity_templates?.settings?.questions || [];
       // Aggregate results
+      if (!answers) {
+        setResults([]);
+        return;
+      }
       const stats = questions.map((q: any, idx: number) => {
         const qAnswers = answers.filter((a: any) => a.question_id === q.id);
         const correct = qAnswers.filter((a: any) => a.answer === q.correct).length;

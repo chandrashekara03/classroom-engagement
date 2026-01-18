@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createClient } from "@supabase/supabase-js";
 import { nanoid } from "nanoid";
 import { useStudentSession } from "../../session/(components)/useStudentSession";
 
@@ -12,7 +12,10 @@ export default function JoinCodeHandler({ code }: { code: string }) {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const router = useRouter();
-  const supabase = createClientComponentClient();
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
   const { setStudentSession } = useStudentSession();
 
   useEffect(() => {
@@ -42,7 +45,7 @@ export default function JoinCodeHandler({ code }: { code: string }) {
     let studentId = localStorage.getItem("student_id");
     if (!studentId) {
       studentId = nanoid();
-      await supabase.from("users").insert({ id: studentId, name, role: "student", email: null }).onConflict(["id"]).ignore();
+      await supabase.from("users").upsert({ id: studentId, name, role: "student", email: null });
       localStorage.setItem("student_id", studentId);
     }
     // Insert into session_participants

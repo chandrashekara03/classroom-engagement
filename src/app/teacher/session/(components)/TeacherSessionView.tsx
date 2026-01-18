@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createClient } from "@supabase/supabase-js";
 import io from "socket.io-client";
 
 const socket = io();
@@ -11,7 +11,10 @@ export default function TeacherSessionView({ sessionId }: { sessionId: string })
   const [stats, setStats] = useState<any>({});
   const [timer, setTimer] = useState(0);
   const [live, setLive] = useState(true);
-  const supabase = createClientComponentClient();
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
