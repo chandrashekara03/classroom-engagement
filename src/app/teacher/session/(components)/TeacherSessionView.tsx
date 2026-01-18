@@ -48,8 +48,9 @@ export default function TeacherSessionView({ sessionId }: { sessionId: string })
       updateStats();
     });
 
-    socketManager.on("participant-update", (payload: { count: number }) => {
-      setParticipantCount(payload.count);
+    socketManager.on("participant-update", (payload) => {
+      const { count } = payload as { count: number };
+      setParticipantCount(count);
     });
 
     socketManager.on("time-sync", () => {

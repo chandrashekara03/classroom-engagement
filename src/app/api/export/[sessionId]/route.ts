@@ -155,8 +155,8 @@ async function getPollResults(supabase: SupabaseClient, sessionId: string) {
     .eq("session_id", sessionId);
 
   const counts: { [key: string]: number } = {};
-  votes?.forEach((v: { poll_options?: { option_text?: string } }) => {
-    const text = v.poll_options?.option_text || "Unknown";
+  votes?.forEach((v) => {
+    const text = v.poll_options?.[0]?.option_text || "Unknown";
     counts[text] = (counts[text] || 0) + 1;
   });
 

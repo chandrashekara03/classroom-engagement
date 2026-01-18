@@ -43,8 +43,9 @@ export default function StudentSessionView({ sessionId }: { sessionId: string })
 
     // Event handlers
     socketManager.on("SESSION_START", () => setSessionStatus("live"));
-    socketManager.on("QUESTION_START", (payload: { index: number }) => {
-      setCurrent(payload.index);
+    socketManager.on("QUESTION_START", (payload) => {
+      const { index } = payload as { index: number };
+      setCurrent(index);
       setAnswer("");
       setSubmitted(false);
       setWaiting(false);
