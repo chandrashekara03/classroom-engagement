@@ -17,6 +17,16 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     const checkAuth = async () => {
+      if (!supabase) {
+        // If supabase is not available, check localStorage for student session
+        const studentId = localStorage.getItem("student_id");
+        if (studentId) {
+          setUserType("student");
+          const storedSessionId = localStorage.getItem("session_id");
+          setSessionId(storedSessionId);
+        }
+        return;
+      }
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         setUserType("teacher");
