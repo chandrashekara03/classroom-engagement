@@ -3,6 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 import { redirect } from "next/navigation";
 import { ReactNode } from "react";
 import Link from "next/link";
+import LogoutButton from "./LogoutButton";
 
 export const dynamic = "force-dynamic";
 
@@ -68,14 +69,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
               >
                 Analytics
               </Link>
-              <form action="/admin/actions/logout" method="post" className="inline">
-                <button
-                  type="submit"
-                  className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium"
-                >
-                  Logout
-                </button>
-              </form>
+              <LogoutButton />
             </div>
           </div>
         </div>
