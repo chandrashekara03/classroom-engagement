@@ -39,7 +39,7 @@ export default function AnalyticsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="outline" size="icon" onClick={() => router.push('/')}>
+        <Button variant="outline" size="icon" onClick={() => router.push('/teacher')}>
           <LucideArrowLeft size={18} />
         </Button>
         <div>
@@ -125,7 +125,7 @@ export default function AnalyticsPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <Link href={`/session/${session.id}`} className="text-blue-600 hover:text-blue-800 hover:underline">
+                      <Link href={`/teacher/session/${session.id}`} className="text-blue-600 hover:text-blue-800 hover:underline">
                         View
                       </Link>
                     </td>
