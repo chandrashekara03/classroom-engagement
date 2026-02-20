@@ -1,0 +1,25 @@
+src/components/ActivityParticipation.tsx(141,15): error TS2322: Type '{ duration: number; autoStart: true; className: string; variant: string; }' is not assignable to type 'IntrinsicAttributes & TimerProps'.
+  Property 'variant' does not exist on type 'IntrinsicAttributes & TimerProps'.
+src/components/ActivityParticipation.tsx(238,53): error TS2339: Property 'text' does not exist on type 'QuizQuestion'.
+src/components/ActivityParticipation.tsx(243,45): error TS2339: Property 'multiple' does not exist on type 'QuizQuestion'.
+src/components/ActivityParticipation.tsx(250,88): error TS2339: Property 'multiple' does not exist on type 'QuizQuestion'.
+src/components/ActivityParticipation.tsx(259,67): error TS2339: Property 'multiple' does not exist on type 'QuizQuestion'.
+src/components/ActivityParticipation.tsx(348,24): error TS2339: Property 'enableRating' does not exist on type 'FeedbackActivity'.
+src/components/ActivityParticipation.tsx(351,47): error TS2339: Property 'enableRating' does not exist on type 'FeedbackActivity'.
+src/components/ActivityParticipation.tsx(362,19): error TS2339: Property 'enableRating' does not exist on type 'FeedbackActivity'.
+src/components/ActivityParticipation.tsx(437,75): error TS2339: Property 'riddle' does not exist on type 'WordRiddleActivity'.
+src/components/ActivityParticipation.tsx(440,19): error TS2339: Property 'hints' does not exist on type 'WordRiddleActivity'.
+src/components/ActivityParticipation.tsx(440,37): error TS2339: Property 'hints' does not exist on type 'WordRiddleActivity'.
+src/components/ActivityParticipation.tsx(443,23): error TS2339: Property 'hints' does not exist on type 'WordRiddleActivity'.
+src/components/ActivityParticipation.tsx(500,32): error TS2339: Property 'clues' does not exist on type 'TreasureHuntActivity'.
+src/components/ActivityParticipation.tsx(505,79): error TS2339: Property 'clues' does not exist on type 'TreasureHuntActivity'.
+src/components/ActivityParticipation.tsx(517,51): error TS2339: Property 'clues' does not exist on type 'TreasureHuntActivity'.
+src/components/ActivityParticipation.tsx(517,79): error TS2339: Property 'clues' does not exist on type 'TreasureHuntActivity'.
+src/components/ActivityParticipation.tsx(530,53): error TS2339: Property 'clues' does not exist on type 'TreasureHuntActivity'.
+src/components/ActivityParticipation.tsx(626,21): error TS2339: Property 'leftItems' does not exist on type 'PairingActivity'.
+src/components/ActivityParticipation.tsx(642,29): error TS2339: Property 'rightItems' does not exist on type 'PairingActivity'.
+src/components/ActivityParticipation.tsx(713,27): error TS2339: Property 'description' does not exist on type 'ScenarioChoice'.
+src/components/ActivityParticipation.tsx(714,65): error TS2339: Property 'description' does not exist on type 'ScenarioChoice'.
+src/components/ActivityParticipation.tsx(722,19): error TS2339: Property 'requireReasoning' does not exist on type 'ScenarioActivity'.
+tailwind.config.ts(1,29): error TS2307: Cannot find module 'tailwindcss' or its corresponding type declarations.
+  There are types at 'C:/projects/classroom-engagement/node_modules/tailwindcss/dist/lib.d.mts', but this result could not be resolved under your current 'moduleResolution' setting. Consider updating to 'node16', 'nodenext', or 'bundler'.

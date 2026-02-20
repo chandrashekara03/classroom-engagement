@@ -1,0 +1,7 @@
+@import "tailwindcss";
+@import "@classroom/ui-components/src/index.css" layer(base);
+
+:root {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+}

@@ -1,0 +1,63 @@
+../activity-engine/src/activity-engine.ts(1,10): error TS1127: Invalid character.
+../activity-engine/src/activity-engine.ts(1,14): error TS1005: ',' expected.
+../activity-engine/src/activity-engine.ts(1,23): error TS1127: Invalid character.
+../activity-engine/src/activity-engine.ts(1,27): error TS1005: ',' expected.
+../activity-engine/src/activity-engine.ts(1,44): error TS1127: Invalid character.
+../activity-engine/src/activity-engine.ts(1,48): error TS1005: ',' expected.
+../activity-engine/src/activity-engine.ts(1,61): error TS1127: Invalid character.
+../activity-engine/src/activity-engine.ts(1,65): error TS1005: ',' expected.
+../activity-engine/src/activity-engine.ts(1,78): error TS1127: Invalid character.
+../activity-engine/src/activity-engine.ts(1,82): error TS1005: ',' expected.
+../activity-engine/src/activity-engine.ts(1,95): error TS1127: Invalid character.
+../activity-engine/src/activity-engine.ts(1,99): error TS1005: ',' expected.
+../activity-engine/src/activity-engine.ts(1,112): error TS1127: Invalid character.
+../activity-engine/src/activity-engine.ts(1,116): error TS1005: ',' expected.
+../activity-engine/src/activity-engine.ts(1,129): error TS1127: Invalid character.
+../activity-engine/src/activity-engine.ts(1,133): error TS1005: ',' expected.
+../activity-engine/src/activity-engine.ts(1,150): error TS1127: Invalid character.
+../activity-engine/src/activity-engine.ts(1,154): error TS1005: ',' expected.
+../activity-engine/src/activity-engine.ts(1,171): error TS1127: Invalid character.
+../activity-engine/src/activity-engine.ts(1,175): error TS1005: ',' expected.
+../activity-engine/src/activity-engine.ts(1,194): error TS1127: Invalid character.
+../activity-engine/src/activity-engine.ts(1,198): error TS1005: ',' expected.
+../activity-engine/src/activity-engine.ts(1,217): error TS1127: Invalid character.
+../activity-engine/src/activity-engine.ts(1,221): error TS1005: ',' expected.
+../activity-engine/src/activity-engine.ts(1,242): error TS1127: Invalid character.
+../activity-engine/src/activity-engine.ts(1,246): error TS1005: ',' expected.
+../activity-engine/src/activity-engine.ts(1,267): error TS1127: Invalid character.
+../activity-engine/src/activity-engine.ts(1,271): error TS1005: ',' expected.
+../activity-engine/src/activity-engine.ts(1,287): error TS1127: Invalid character.
+../activity-engine/src/activity-engine.ts(1,291): error TS1005: ',' expected.
+../activity-engine/src/activity-engine.ts(1,307): error TS1127: Invalid character.
+../activity-engine/src/activity-engine.ts(1,311): error TS1005: ',' expected.
+../activity-engine/src/activity-engine.ts(1,328): error TS1127: Invalid character.
+../activity-engine/src/activity-engine.ts(1,332): error TS1005: ',' expected.
+../activity-engine/src/activity-engine.ts(1,349): error TS1127: Invalid character.
+../activity-engine/src/activity-engine.ts(1,353): error TS1005: ',' expected.
+../activity-engine/src/activity-engine.ts(1,365): error TS1127: Invalid character.
+../activity-engine/src/activity-engine.ts(1,369): error TS1005: ',' expected.
+../activity-engine/src/activity-engine.ts(1,375): error TS1127: Invalid character.
+../activity-engine/src/activity-engine.ts(1,379): error TS1005: ',' expected.
+../activity-engine/src/activity-engine.ts(1,396): error TS1127: Invalid character.
+../activity-engine/src/activity-engine.ts(1,400): error TS1005: ',' expected.
+../activity-engine/src/activity-engine.ts(1,437): error TS1127: Invalid character.
+../activity-engine/src/activity-engine.ts(1,441): error TS1005: ',' expected.
+../activity-engine/src/activity-engine.ts(1,467): error TS1127: Invalid character.
+../activity-engine/src/activity-engine.ts(1,471): error TS1005: ',' expected.
+../activity-engine/src/activity-engine.ts(1,489): error TS1127: Invalid character.
+../activity-engine/src/activity-engine.ts(1,524): error TS1127: Invalid character.
+../activity-engine/src/activity-engine.ts(1,526): error TS1127: Invalid character.
+../activity-engine/src/activity-engine.ts(1,527): error TS1435: Unknown keyword or identifier. Did you mean 'export'?
+../activity-engine/src/activity-engine.ts(1,557): error TS1127: Invalid character.
+../activity-engine/src/activity-engine.ts(1,633): error TS1127: Invalid character.
+../activity-engine/src/activity-engine.ts(1,634): error TS1434: Unexpected keyword or identifier.
+../activity-engine/src/activity-engine.ts(1,711): error TS1127: Invalid character.
+../activity-engine/src/activity-engine.ts(1,712): error TS1131: Property or signature expected.
+../activity-engine/src/activity-engine.ts(1,734): error TS1127: Invalid character.
+../activity-engine/src/activity-engine.ts(1,735): error TS1434: Unexpected keyword or identifier.
+../activity-engine/src/activity-engine.ts(1,757): error TS1127: Invalid character.
+../activity-engine/src/activity-engine.ts(1,764): error TS1127: Invalid character.
+../activity-engine/src/activity-engine.ts(1,765): error TS1434: Unexpected keyword or identifier.
+../activity-engine/src/activity-engine.ts(1,798): error TS1127: Invalid character.
+../activity-engine/src/activity-engine.ts(1,804): error TS1127: Invalid character.
+../activity-engine/src/activity-engine.ts(1,12565): error TS1005: '}' expected.
