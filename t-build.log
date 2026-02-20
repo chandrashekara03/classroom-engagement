@@ -1,0 +1,127 @@
+
+> teacher-dashboard@0.1.0 build
+> next build
+
+▲ Next.js 16.1.6 (Turbopack)
+
+  Creating an optimized production build ...
+
+> Build error occurred
+Error: Turbopack build failed with 6 errors:
+./apps/teacher-dashboard/src/app/session/[id]/page.tsx:1:20
+Ecmascript file had an error
+[0m[31m[1m>[22m[39m[90m 1 |[39m [36mimport[39m { useState[33m,[39m useEffect } [36mfrom[39m [32m"react"[39m[33m;[39m
+ [90m   |[39m                    [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 2 |[39m [36mimport[39m { [33mCard[39m[33m,[39m [33mCardContent[39m[33m,[39m [33mCardHeader[39m[33m,[39m [33mCardTitle[39m[33m,[39m [33mSessionStatusIndicator[39m[33m,[39m [33mGroupDisplay[39m[33m,[39m [33mButton[39m } [36mfrom[39m [32m"@classroom/ui-components"[39m[33m;[39m
+ [90m 3 |[39m [36mimport[39m { [33mLucidePlay[39m[33m,[39m [33mLucidePause[39m[33m,[39m [33mLucideSquare[39m[33m,[39m [33mLucideUsers[39m[33m,[39m [33mLucideTimer[39m[33m,[39m [33mLucideBarChart3[39m[33m,[39m [33mLucideDices[39m[33m,[39m [33mLucideUserPlus[39m[33m,[39m [33mLucideX[39m } [36mfrom[39m [32m"lucide-react"[39m[33m;[39m
+ [90m 4 |[39m [36mimport[39m { useParams[33m,[39m useRouter } [36mfrom[39m [32m"next/navigation"[39m[33m;[39m[0m
+
+You're importing a component that needs `useEffect`. This React Hook only works in a Client Component. To fix, mark the file (or its parent) with the `"use client"` directive.
+
+ Learn more: https://nextjs.org/docs/app/api-reference/directives/use-client
+
+
+
+
+./apps/teacher-dashboard/src/app/session/[id]/page.tsx:4:10
+Ecmascript file had an error
+[0m [90m 2 |[39m [36mimport[39m { [33mCard[39m[33m,[39m [33mCardContent[39m[33m,[39m [33mCardHeader[39m[33m,[39m [33mCardTitle[39m[33m,[39m [33mSessionStatusIndicator[39m[33m,[39m [33mGroupDisplay[39m[33m,[39m [33mButton[39m } [36mfrom[39m [32m"@classroom/ui-components"[39m[33m;[39m
+ [90m 3 |[39m [36mimport[39m { [33mLucidePlay[39m[33m,[39m [33mLucidePause[39m[33m,[39m [33mLucideSquare[39m[33m,[39m [33mLucideUsers[39m[33m,[39m [33mLucideTimer[39m[33m,[39m [33mLucideBarChart3[39m[33m,[39m [33mLucideDices[39m[33m,[39m [33mLucideUserPlus[39m[33m,[39m [33mLucideX[39m } [36mfrom[39m [32m"lucide-react"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 4 |[39m [36mimport[39m { useParams[33m,[39m useRouter } [36mfrom[39m [32m"next/navigation"[39m[33m;[39m
+ [90m   |[39m          [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 5 |[39m [36mimport[39m { useSocket } [36mfrom[39m [32m"../../../hooks/useSocket"[39m[33m;[39m
+ [90m 6 |[39m
+ [90m 7 |[39m [36mexport[39m [36mdefault[39m [36mfunction[39m [33mSessionManager[39m() {[0m
+
+You're importing a component that needs `useParams`. This React Hook only works in a Client Component. To fix, mark the file (or its parent) with the `"use client"` directive.
+
+ Learn more: https://nextjs.org/docs/app/api-reference/directives/use-client
+
+
+
+
+./apps/teacher-dashboard/src/app/session/[id]/page.tsx:4:21
+Ecmascript file had an error
+[0m [90m 2 |[39m [36mimport[39m { [33mCard[39m[33m,[39m [33mCardContent[39m[33m,[39m [33mCardHeader[39m[33m,[39m [33mCardTitle[39m[33m,[39m [33mSessionStatusIndicator[39m[33m,[39m [33mGroupDisplay[39m[33m,[39m [33mButton[39m } [36mfrom[39m [32m"@classroom/ui-components"[39m[33m;[39m
+ [90m 3 |[39m [36mimport[39m { [33mLucidePlay[39m[33m,[39m [33mLucidePause[39m[33m,[39m [33mLucideSquare[39m[33m,[39m [33mLucideUsers[39m[33m,[39m [33mLucideTimer[39m[33m,[39m [33mLucideBarChart3[39m[33m,[39m [33mLucideDices[39m[33m,[39m [33mLucideUserPlus[39m[33m,[39m [33mLucideX[39m } [36mfrom[39m [32m"lucide-react"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 4 |[39m [36mimport[39m { useParams[33m,[39m useRouter } [36mfrom[39m [32m"next/navigation"[39m[33m;[39m
+ [90m   |[39m                     [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 5 |[39m [36mimport[39m { useSocket } [36mfrom[39m [32m"../../../hooks/useSocket"[39m[33m;[39m
+ [90m 6 |[39m
+ [90m 7 |[39m [36mexport[39m [36mdefault[39m [36mfunction[39m [33mSessionManager[39m() {[0m
+
+You're importing a component that needs `useRouter`. This React Hook only works in a Client Component. To fix, mark the file (or its parent) with the `"use client"` directive.
+
+ Learn more: https://nextjs.org/docs/app/api-reference/directives/use-client
+
+
+
+
+./apps/teacher-dashboard/src/app/session/[id]/page.tsx:1:10
+Ecmascript file had an error
+[0m[31m[1m>[22m[39m[90m 1 |[39m [36mimport[39m { useState[33m,[39m useEffect } [36mfrom[39m [32m"react"[39m[33m;[39m
+ [90m   |[39m          [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 2 |[39m [36mimport[39m { [33mCard[39m[33m,[39m [33mCardContent[39m[33m,[39m [33mCardHeader[39m[33m,[39m [33mCardTitle[39m[33m,[39m [33mSessionStatusIndicator[39m[33m,[39m [33mGroupDisplay[39m[33m,[39m [33mButton[39m } [36mfrom[39m [32m"@classroom/ui-components"[39m[33m;[39m
+ [90m 3 |[39m [36mimport[39m { [33mLucidePlay[39m[33m,[39m [33mLucidePause[39m[33m,[39m [33mLucideSquare[39m[33m,[39m [33mLucideUsers[39m[33m,[39m [33mLucideTimer[39m[33m,[39m [33mLucideBarChart3[39m[33m,[39m [33mLucideDices[39m[33m,[39m [33mLucideUserPlus[39m[33m,[39m [33mLucideX[39m } [36mfrom[39m [32m"lucide-react"[39m[33m;[39m
+ [90m 4 |[39m [36mimport[39m { useParams[33m,[39m useRouter } [36mfrom[39m [32m"next/navigation"[39m[33m;[39m[0m
+
+You're importing a component that needs `useState`. This React Hook only works in a Client Component. To fix, mark the file (or its parent) with the `"use client"` directive.
+
+ Learn more: https://nextjs.org/docs/app/api-reference/directives/use-client
+
+
+
+
+./apps/teacher-dashboard/src/hooks/useSocket.ts:1:10
+Ecmascript file had an error
+[0m[31m[1m>[22m[39m[90m 1 |[39m [36mimport[39m { useEffect[33m,[39m useState[33m,[39m useCallback } [36mfrom[39m [32m'react'[39m[33m;[39m
+ [90m   |[39m          [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 2 |[39m [36mimport[39m { io[33m,[39m [33mSocket[39m } [36mfrom[39m [32m'socket.io-client'[39m[33m;[39m
+ [90m 3 |[39m [36mimport[39m type { [33mSessionEvent[39m[33m,[39m [33mSessionState[39m[33m,[39m [33mActivity[39m[33m,[39m [33mActivityResponse[39m[33m,[39m [33mParticipant[39m } [36mfrom[39m [32m'@classroom/shared-utils'[39m[33m;[39m
+ [90m 4 |[39m[0m
+
+You're importing a component that needs `useEffect`. This React Hook only works in a Client Component. To fix, mark the file (or its parent) with the `"use client"` directive.
+
+ Learn more: https://nextjs.org/docs/app/api-reference/directives/use-client
+
+
+
+Import trace:
+  Server Component:
+    ./apps/teacher-dashboard/src/hooks/useSocket.ts
+    ./apps/teacher-dashboard/src/app/session/[id]/page.tsx
+
+
+./apps/teacher-dashboard/src/hooks/useSocket.ts:1:21
+Ecmascript file had an error
+[0m[31m[1m>[22m[39m[90m 1 |[39m [36mimport[39m { useEffect[33m,[39m useState[33m,[39m useCallback } [36mfrom[39m [32m'react'[39m[33m;[39m
+ [90m   |[39m                     [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 2 |[39m [36mimport[39m { io[33m,[39m [33mSocket[39m } [36mfrom[39m [32m'socket.io-client'[39m[33m;[39m
+ [90m 3 |[39m [36mimport[39m type { [33mSessionEvent[39m[33m,[39m [33mSessionState[39m[33m,[39m [33mActivity[39m[33m,[39m [33mActivityResponse[39m[33m,[39m [33mParticipant[39m } [36mfrom[39m [32m'@classroom/shared-utils'[39m[33m;[39m
+ [90m 4 |[39m[0m
+
+You're importing a component that needs `useState`. This React Hook only works in a Client Component. To fix, mark the file (or its parent) with the `"use client"` directive.
+
+ Learn more: https://nextjs.org/docs/app/api-reference/directives/use-client
+
+
+
+Import trace:
+  Server Component:
+    ./apps/teacher-dashboard/src/hooks/useSocket.ts
+    ./apps/teacher-dashboard/src/app/session/[id]/page.tsx
+
+
+    at <unknown> (./apps/teacher-dashboard/src/app/session/[id]/page.tsx:1:20)
+    at <unknown> (./apps/teacher-dashboard/src/app/session/[id]/page.tsx:4:10)
+    at <unknown> (./apps/teacher-dashboard/src/app/session/[id]/page.tsx:4:21)
+    at <unknown> (./apps/teacher-dashboard/src/app/session/[id]/page.tsx:1:10)
+    at <unknown> (./apps/teacher-dashboard/src/hooks/useSocket.ts:1:10)
+    at <unknown> (./apps/teacher-dashboard/src/hooks/useSocket.ts:1:21)
+npm error Lifecycle script `build` failed with error:
+npm error code 1
+npm error path C:\projects\classroom-engagement\apps\teacher-dashboard
+npm error workspace teacher-dashboard@0.1.0
+npm error location C:\projects\classroom-engagement\apps\teacher-dashboard
+npm error command failed
+npm error command C:\Windows\system32\cmd.exe /d /s /c next build

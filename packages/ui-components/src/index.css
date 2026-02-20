@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+@theme {
+  --color-academic-blue: #1e40af;
+  --color-academic-slate: #334155;
+  --color-academic-primary: #2563eb;
+}
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900;
+  }
+}

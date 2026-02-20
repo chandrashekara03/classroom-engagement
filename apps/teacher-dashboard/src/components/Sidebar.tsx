@@ -1,0 +1,156 @@
+'use client';
+
+import { useState } from 'react';
+import {
+  LayoutDashboard,
+  Activity,
+  Users,
+  BarChart3,
+  Settings,
+  BookOpen,
+  LogOut,
+  Menu,
+  X
+} from 'lucide-react';
+import { Button } from '@classroom/ui-components';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+
+interface SidebarProps {
+  className?: string;
+}
+
+const navigationItems = [
+  {
+    name: 'Dashboard',
+    href: '/',
+    icon: LayoutDashboard,
+    current: true
+  },
+  {
+    name: 'Activities',
+    href: '/activities',
+    icon: Activity,
+    current: false
+  },
+  {
+    name: 'Sessions',
+    href: '/sessions',
+    icon: BookOpen,
+    current: false
+  },
+  {
+    name: 'Participants',
+    href: '/participants',
+    icon: Users,
+    current: false
+  },
+  {
+    name: 'Analytics',
+    href: '/analytics',
+    icon: BarChart3,
+    current: false
+  },
+  {
+    name: 'Settings',
+    href: '/settings',
+    icon: Settings,
+    current: false
+  }
+];
+
+export function Sidebar({ className }: SidebarProps) {
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const pathname = usePathname();
+
+  return (
+    <>
+      {/* Mobile menu button */}
+      <div className="lg:hidden fixed top-4 left-4 z-50">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => setIsMobileOpen(!isMobileOpen)}
+        >
+          {isMobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+        </Button>
+      </div>
+
+      {/* Mobile backdrop */}
+      {isMobileOpen && (
+        <div 
+          className="lg:hidden fixed inset-0 bg-slate-600 bg-opacity-75 z-40"
+          onClick={() => setIsMobileOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <div className={`
+        fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-200 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0
+        ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}
+      `}>
+        <div className="flex flex-col h-full">
+          {/* Logo/Header */}
+          <div className="flex items-center h-16 px-6 border-b border-slate-200">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <Activity className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-lg font-semibold text-slate-900">Classroom</h1>
+                <p className="text-xs text-slate-500">Teacher Dashboard</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Navigation */}
+          <nav className="flex-1 px-4 py-6 space-y-2">
+            {navigationItems.map((item) => {
+              const Icon = item.icon;
+              const isCurrent = pathname === item.href;
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  onClick={() => setIsMobileOpen(false)}
+                  className={`
+                    flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors
+                    ${isCurrent
+                      ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                      : 'text-slate-700 hover:bg-slate-100'
+                    }
+                  `}
+                >
+                  <Icon className={`mr-3 h-4 w-4 ${isCurrent ? 'text-blue-700' : 'text-slate-400'}`} />
+                  {item.name}
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* User section */}
+          <div className="px-4 py-4 border-t border-slate-200">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-8 h-8 bg-slate-300 rounded-full flex items-center justify-center">
+                <span className="text-sm font-medium text-slate-700">JD</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-900 truncate">John Doe</p>
+                <p className="text-xs text-slate-500 truncate">Mathematics Professor</p>
+              </div>
+            </div>
+            
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="w-full justify-start text-slate-600 hover:text-slate-900"
+            >
+              <LogOut className="mr-3 h-4 w-4" />
+              Sign Out
+            </Button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}

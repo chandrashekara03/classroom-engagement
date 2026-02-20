@@ -1,0 +1,5 @@
+src/components/TeacherDashboard.tsx(157,15): error TS2322: Type '{ status: "LIVE"; sessionCode: string; }' is not assignable to type 'IntrinsicAttributes & SessionStatusIndicatorProps'.
+  Property 'sessionCode' does not exist on type 'IntrinsicAttributes & SessionStatusIndicatorProps'.
+tailwind.config.ts(1,29): error TS2307: Cannot find module 'tailwindcss' or its corresponding type declarations.
+  There are types at 'C:/projects/classroom-engagement/node_modules/tailwindcss/dist/lib.d.mts', but this result could not be resolved under your current 'moduleResolution' setting. Consider updating to 'node16', 'nodenext', or 'bundler'.
+../../packages/ui-components/src/components/Timer.tsx(28,29): error TS2554: Expected 1 arguments, but got 0.

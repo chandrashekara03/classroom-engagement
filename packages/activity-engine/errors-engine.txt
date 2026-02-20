@@ -1,0 +1,20 @@
+../../apps/student-client/src/components/ActivityParticipation.tsx(242,16): error TS18048: 'question.options' is possibly 'undefined'.
+../../apps/student-client/src/components/ActivityParticipation.tsx(250,79): error TS2345: Argument of type 'boolean | undefined' is not assignable to parameter of type 'boolean'.
+  Type 'undefined' is not assignable to type 'boolean'.
+../../apps/student-client/src/components/ActivityParticipation.tsx(500,23): error TS18048: 'activity.clues' is possibly 'undefined'.
+../../apps/student-client/src/components/ActivityParticipation.tsx(505,70): error TS18048: 'activity.clues' is possibly 'undefined'.
+../../apps/student-client/src/components/ActivityParticipation.tsx(517,42): error TS18048: 'activity.clues' is possibly 'undefined'.
+../../apps/student-client/src/components/ActivityParticipation.tsx(517,70): error TS18048: 'activity.clues' is possibly 'undefined'.
+../../apps/student-client/src/components/ActivityParticipation.tsx(530,44): error TS18048: 'activity.clues' is possibly 'undefined'.
+../../apps/student-client/src/components/ActivityParticipation.tsx(626,12): error TS18048: 'activity.leftItems' is possibly 'undefined'.
+../../apps/student-client/src/components/ActivityParticipation.tsx(642,20): error TS18048: 'activity.rightItems' is possibly 'undefined'.
+../../apps/student-client/tailwind.config.ts(1,1): error TS2578: Unused '@ts-expect-error' directive.
+../../apps/teacher-dashboard/tailwind.config.ts(1,1): error TS2578: Unused '@ts-expect-error' directive.
+../ui-components/src/components/FeedbackWall.tsx(109,7): error TS7053: Element implicitly has an 'any' type because expression of type 'FeedbackType' can't be used to index type '{ all: number; }'.
+  Property 'question' does not exist on type '{ all: number; }'.
+../ui-components/src/components/FeedbackWall.tsx(109,28): error TS7053: Element implicitly has an 'any' type because expression of type 'FeedbackType' can't be used to index type '{ all: number; }'.
+  Property 'question' does not exist on type '{ all: number; }'.
+../ui-components/src/components/FeedbackWall.tsx(136,36): error TS7053: Element implicitly has an 'any' type because expression of type 'FeedbackType' can't be used to index type '{ all: number; }'.
+  Property 'question' does not exist on type '{ all: number; }'.
+../ui-components/src/components/SessionStatusIndicator.tsx(17,18): error TS7053: Element implicitly has an 'any' type because expression of type 'SessionStatus' can't be used to index type '{ SCHEDULED: { color: string; label: string; }; LIVE: { color: string; label: string; }; COMPLETED: { color: string; label: string; }; }'.
+  Property 'PAIRING' does not exist on type '{ SCHEDULED: { color: string; label: string; }; LIVE: { color: string; label: string; }; COMPLETED: { color: string; label: string; }; }'.
