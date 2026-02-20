@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { Sidebar } from "../components/Sidebar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Teacher Dashboard | Classroom Engagement",
-  description: "Academic control interface for teachers.",
+  title: "Classroom Engagement Platform",
+  description: "A unified platform for interactive classroom activities, quizzes, polls, and real-time engagement without limitations.",
 };
 
 export default function RootLayout({
@@ -26,14 +25,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-50 text-slate-900`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <div className="flex min-h-screen">
-          <Sidebar />
-          <main className="flex-1 lg:ml-64 p-6">
-            {children}
-          </main>
-        </div>
+        {children}
       </body>
     </html>
   );

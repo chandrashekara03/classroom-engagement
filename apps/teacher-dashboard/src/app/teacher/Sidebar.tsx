@@ -23,37 +23,37 @@ interface SidebarProps {
 const navigationItems = [
   {
     name: 'Dashboard',
-    href: '/',
+    href: '/teacher',
     icon: LayoutDashboard,
     current: true
   },
   {
     name: 'Activities',
-    href: '/activities',
+    href: '/teacher/activities',
     icon: Activity,
     current: false
   },
   {
     name: 'Sessions',
-    href: '/sessions',
+    href: '/teacher/sessions',
     icon: BookOpen,
     current: false
   },
   {
     name: 'Participants',
-    href: '/participants',
+    href: '/teacher/participants',
     icon: Users,
     current: false
   },
   {
     name: 'Analytics',
-    href: '/analytics',
+    href: '/teacher/analytics',
     icon: BarChart3,
     current: false
   },
   {
     name: 'Settings',
-    href: '/settings',
+    href: '/teacher/settings',
     icon: Settings,
     current: false
   }

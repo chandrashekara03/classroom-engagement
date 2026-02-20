@@ -6,8 +6,8 @@ import { ActivityType } from "@classroom/shared-utils";
 import { LucideChevronLeft, LucideSave, LucideTimer, LucideTrophy, LucideSettings } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { QuizBuilder } from "../../components/activity-builder/QuizBuilder";
-import { PollBuilder } from "../../components/activity-builder/PollBuilder";
+import { QuizBuilder } from "../../../components/activity-builder/QuizBuilder";
+import { PollBuilder } from "../../../components/activity-builder/PollBuilder";
 
 export default function CreateActivity() {
   const router = useRouter();
@@ -51,13 +51,13 @@ export default function CreateActivity() {
     const existing = JSON.parse(localStorage.getItem('classroom_templates') || '[]');
     localStorage.setItem('classroom_templates', JSON.stringify([...existing, newActivity]));
     
-    router.push('/');
+    router.push('/teacher');
   };
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center gap-4">
-        <Link href="/" className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+        <Link href="/teacher" className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
           <LucideChevronLeft size={24} />
         </Link>
         <h1 className="text-2xl font-bold">New Activity Template</h1>
