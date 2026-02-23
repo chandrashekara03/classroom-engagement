@@ -47,14 +47,14 @@ export default function RootRoleSelectionPage() {
           
           <div className="space-y-4">
             <Link 
-              href="http://localhost:3005/teacher/login" 
+              href="/teacher/login" 
               className="w-full flex items-center justify-center px-6 py-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-medium transition-colors shadow-sm focus:ring-2 focus:ring-slate-400 focus:outline-none"
             >
               Faculty Portal
             </Link>
 
             <Link 
-              href="/student" 
+              href="/student/join" 
               className="w-full flex items-center justify-center px-6 py-4 border-2 border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 rounded-xl font-medium transition-colors focus:ring-2 focus:ring-slate-200 focus:outline-none"
             >
               Student Session

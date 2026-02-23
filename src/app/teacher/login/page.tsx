@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../../../lib/firebase';
-import { useAuth } from '../../../contexts/AuthContext';
+import { auth } from '@/lib/firebase';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, Input, Button } from '@classroom/ui-components';
 import { Activity, Lock, Mail, AlertCircle } from 'lucide-react';
 

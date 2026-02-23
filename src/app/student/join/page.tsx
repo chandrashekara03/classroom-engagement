@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { SessionJoin, JoinedSession } from '../../../components/StudentInterface';
-import ActivityParticipation from '../../../components/ActivityParticipation';
+import { SessionJoin, JoinedSession } from '@/components/student/StudentInterface';
+import ActivityParticipation from '@/components/student/ActivityParticipation';
 import type { Activity, ActivityResponse, SessionState as AppSessionState } from '@classroom/shared-utils';
-import { useSocket } from '../../../hooks/useSocket';
+import { useSocket } from '@/hooks/useSocket';
 
 interface SessionState {
   isJoined: boolean;
