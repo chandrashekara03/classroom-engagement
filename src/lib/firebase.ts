@@ -1,7 +1,8 @@
 ﻿// Import the functions you need from the SDKs you need
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth, Auth } from 'firebase/auth';
-import { getDatabase, Database } from 'firebase/database';
+import { getAuth } from 'firebase/auth';
+import { getDatabase } from 'firebase/database';
+import { getAnalytics, Analytics } from 'firebase/analytics';
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -11,7 +12,8 @@ const firebaseConfig = {
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'dummy-app-id',
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'dummy-app.appspot.com',
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '000000000000',
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || '1:000000000000:web:0000000000000000000000'
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || '1:000000000000:web:0000000000000000000000',
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || undefined
 };
 
 // Initialize Firebase only if it hasn't been initialized already
@@ -28,5 +30,8 @@ export const auth: Auth | null = app ? getAuth(app) : null;
 
 // Initialize Realtime Database and get a reference to the service
 export const database: Database | null = app ? getDatabase(app) : null;
+
+// Initialize Analytics (only on client side)
+export const analytics = (app && typeof window !== 'undefined') ? getAnalytics(app) : null as Analytics | null;
 
 export { app };

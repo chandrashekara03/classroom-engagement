@@ -1,12 +1,44 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { BookOpen } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
+import { useRouter } from "next/navigation";
 
 export default function RootRoleSelectionPage() {
+  const { user, loading, userType } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && user) {
+      // Redirect authenticated users to their appropriate dashboard
+      if (userType === 'teacher') {
+        router.push('/teacher');
+      } else if (userType === 'student') {
+        router.push('/student');
+      }
+    }
+  }, [user, loading, userType, router]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-slate-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (user) {
+    return null; // Will redirect in useEffect
+  }
+
   return (
     <div className="min-h-screen bg-white flex flex-col font-sans text-slate-900 selection:bg-blue-100 selection:text-blue-900">
-      
+
       {/* Small Institutional Top Bar */}
       <div className="w-full bg-slate-900 py-2 px-6 text-center shadow-sm">
         <p className="text-xs md:text-sm font-medium text-slate-200 tracking-wide uppercase">
@@ -16,7 +48,7 @@ export default function RootRoleSelectionPage() {
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col items-center justify-center p-6 space-y-12">
-        
+
         {/* Academic Header Section */}
         <div className="text-center space-y-6 max-w-2xl mx-auto">
           <div className="w-20 h-20 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-center mx-auto shadow-sm">
@@ -44,10 +76,38 @@ export default function RootRoleSelectionPage() {
             <h2 className="text-xl font-semibold text-slate-900">Select Your Role</h2>
             <p className="text-sm text-slate-500">Please choose your access portal</p>
           </div>
-          
+
           <div className="space-y-4">
-            <Link 
-              href="/teacher/login" 
+            <Link
+              href="/teacher/login"
+              className="w-full flex items-center justify-center px-6 py-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-medium transition-colors shadow-sm focus:ring-2 focus:ring-slate-400 focus:outline-none"
+            >
+              Faculty Portal
+            </Link>
+
+            <Link
+              href="/student/login"
+              className="w-full flex items-center justify-center px-6 py-4 border-2 border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 rounded-xl font-medium transition-colors focus:ring-2 focus:ring-slate-200 focus:outline-none"
+            >
+              Student Portal
+            </Link>
+          </div>
+
+        </div>
+
+      </main>
+
+      {/* Institutional Footer */}
+      <footer className="w-full py-8 text-center border-t border-slate-100 bg-slate-50">
+        <div className="space-y-1">
+          <p className="text-sm font-semibold text-slate-700">Department of Computer Science</p>
+          <p className="text-xs text-slate-500">Academic Project • CHRIST (Deemed to be University)</p>
+        </div>
+      </footer>
+
+    </div>
+  );
+} 
               className="w-full flex items-center justify-center px-6 py-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-medium transition-colors shadow-sm focus:ring-2 focus:ring-slate-400 focus:outline-none"
             >
               Faculty Portal

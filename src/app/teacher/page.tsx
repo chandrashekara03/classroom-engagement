@@ -6,6 +6,8 @@ import { SessionStatusIndicator } from "@classroom/ui-components";
 import { LucidePlus, LucideUsers, LucideActivity, LucideBarChart2, LucideLayoutDashboard, LucidePlay } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useAuth } from "../../contexts/AuthContext";
+import { dbService, Session } from "../../lib/database";
 
 export default function Home() {
   return (
@@ -15,94 +17,90 @@ export default function Home() {
 
 export function TeacherDashboard() {
   const router = useRouter();
-  interface StoredTemplate {
-    id: string;
-    title?: string;
-    type?: string;
-    questions?: Array<{ id: string; text?: string; options?: Array<{ id: string; text: string }>; correctOption?: string; points?: number }>;
-  }
-  interface StoredSession {
-    id: string;
-    code: string;
-    title?: string;
-    templateId?: string;
-    status?: string;
-    createdAt?: string;
-  }
-  interface ActiveSessionSummary {
-    id: string;
-    name: string;
-    status?: string;
-    participants: number;
-    code: string;
-  }
+  const { user, teacherData } = useAuth();
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [activeSessions, setActiveSessions] = useState<Session[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [templates, setTemplates] = useState<StoredTemplate[]>([]);
-  const [activeSessions, setActiveSessions] = useState<ActiveSessionSummary[]>([]);
-  
   useEffect(() => {
-    const savedTemplates = JSON.parse(localStorage.getItem('classroom_templates') || '[]') as StoredTemplate[];
-    const savedSessions = JSON.parse(localStorage.getItem('classroom_sessions') || '[]') as StoredSession[];
-    
-    // Inject sample test class
-    if (!savedSessions.find((s) => s.code === '000000')) {
-      const sampleSession = {
-        id: "session-sample-000000",
-        code: "000000",
-        title: "Sample Checking Class",
-        templateId: "sample-template",
-        status: "WAITING",
-        createdAt: new Date().toISOString()
-      };
-      savedSessions.push(sampleSession);
-      localStorage.setItem('classroom_sessions', JSON.stringify(savedSessions));
-    }
-    
-    if (!savedTemplates.find((t) => t.id === "sample-template")) {
-      const sampleTemplate = {
-        id: "sample-template",
-        title: "Sample Test Class Theme",
-        type: "QUIZ",
-        questions: [
-            { id: "q1", text: "Is this working?", options: [{id: "opt1", text: "Yes"}, {id: "opt2", text: "No"}], correctOption: "opt1", points: 1 }
-        ]
-      };
-      savedTemplates.push(sampleTemplate);
-      localStorage.setItem('classroom_templates', JSON.stringify(savedTemplates));
-    }
-    
-    setTemplates(savedTemplates);
-    setActiveSessions(savedSessions.map((s) => ({
-      id: s.id,
-      name: s.title || `Session ${s.code}`,
-      status: s.status,
-      participants: 0,
-      code: s.code
-    })));
-  }, []);
+    if (!user || !teacherData) return;
 
-  const handleLaunch = (templateId: string) => {
-    // Find template to get the title
-    const template = templates.find(t => t.id === templateId);
-    
-    // Generate a random 6 char code
-    // eslint-disable-next-line react-hooks/purity
-    const code = Math.random().toString(36).substr(2, 6).toUpperCase();
-    const newSession = {
-      // eslint-disable-next-line react-hooks/purity
-      id: `session-${Date.now()}`,
-      code,
-      templateId,
-      title: template?.title || `Session ${code}`,
-      status: "WAITING",
-      createdAt: new Date().toISOString()
+    const loadData = async () => {
+      try {
+        // Load teacher's sessions from Firebase
+        const sessions = await dbService.getTeacherSessions(user.uid);
+        setActiveSessions(sessions);
+
+        // For now, keep templates in localStorage since they're not in Firebase yet
+        const savedTemplates = JSON.parse(localStorage.getItem('classroom_templates') || '[]');
+
+        // Inject sample test class if not exists
+        if (!sessions.find((s) => s.code === '000000')) {
+          const sampleSession: Session = {
+            id: "session-sample-000000",
+            teacherId: user.uid,
+            code: "000000",
+            title: "Sample Checking Class",
+            status: "SCHEDULED",
+            createdAt: new Date().toISOString(),
+            participants: {}
+          };
+          await dbService.createSession(sampleSession);
+          setActiveSessions(prev => [...prev, sampleSession]);
+        }
+
+        if (!savedTemplates.find((t: any) => t.id === "sample-template")) {
+          const sampleTemplate = {
+            id: "sample-template",
+            title: "Sample Test Class Theme",
+            type: "QUIZ",
+            questions: [
+                { id: "q1", text: "Is this working?", options: [{id: "opt1", text: "Yes"}, {id: "opt2", text: "No"}], correctOption: "opt1", points: 1 }
+            ]
+          };
+          savedTemplates.push(sampleTemplate);
+          localStorage.setItem('classroom_templates', JSON.stringify(savedTemplates));
+        }
+
+        setTemplates(savedTemplates);
+      } catch (error) {
+        console.error('Error loading teacher data:', error);
+      } finally {
+        setLoading(false);
+      }
     };
-    
-    const existingSessions = JSON.parse(localStorage.getItem('classroom_sessions') || '[]');
-    localStorage.setItem('classroom_sessions', JSON.stringify([...existingSessions, newSession]));
-    
-    router.push(`/teacher/session/${newSession.id}`);
+
+    loadData();
+  }, [user, teacherData]);
+
+  const handleLaunch = async (templateId: string) => {
+    if (!user) return;
+
+    try {
+      // Generate a random 6 char code
+      const code = Math.random().toString(36).substr(2, 6).toUpperCase();
+      const newSession: Session = {
+        id: `session-${Date.now()}`,
+        teacherId: user.uid,
+        code,
+        title: templates.find(t => t.id === templateId)?.title || 'New Session',
+        status: "SCHEDULED",
+        createdAt: new Date().toISOString(),
+        participants: {}
+      };
+
+      await dbService.createSession(newSession);
+      setActiveSessions(prev => [...prev, newSession]);
+
+      router.push(`/teacher/session/${newSession.id}`);
+    } catch (error) {
+      console.error('Error creating session:', error);
+    }
   };
+
+  if (loading) {
+    return <div className="flex justify-center items-center h-64">Loading...</div>;
+  }
 
   return (
     <div className="space-y-8">
@@ -138,10 +136,10 @@ export function TeacherDashboard() {
                 {activeSessions.map((session) => (
                   <div key={session.id} className="flex items-center justify-between p-4 rounded-xl border border-slate-200 bg-white hover:border-blue-300 transition-colors shadow-sm">
                     <div className="space-y-1">
-                      <p className="font-semibold text-slate-900">{session.name}</p>
+                      <p className="font-semibold text-slate-900">{session.title}</p>
                       <div className="flex items-center gap-3 text-sm text-slate-500 font-medium">
                         <SessionStatusIndicator status={session.status} />
-                        <span className="flex items-center gap-1"><LucideUsers size={14}/> {session.participants} participants</span>
+                        <span className="flex items-center gap-1"><LucideUsers size={14}/> {Object.keys(session.participants || {}).length} participants</span>
                         <span className="px-2 py-0.5 bg-slate-100 rounded text-slate-600">Code: {session.code}</span>
                       </div>
                     </div>
