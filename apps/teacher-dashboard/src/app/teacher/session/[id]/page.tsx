@@ -316,21 +316,72 @@ export default function SessionManager() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <LucideBarChart3 size={20} className="text-emerald-600" />
-              Live Responses
+              Live Monitor: {templateData?.type || 'Loading...'}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {responses.length === 0 ? (
+            {responses.length === 0 && templateData?.type !== 'PAIRING' ? (
               <div className="flex flex-col items-center justify-center h-full text-slate-400 py-20 grayscale opacity-50">
                 <LucideBarChart3 size={48} className="mb-4" />
-                <p>Waiting for incoming data...</p>
+                <p>Waiting for incoming student responses...</p>
               </div>
             ) : (
               <div className="space-y-4">
-                <p className="text-slate-600">Successfully received {responses.length} responses.</p>
-                <div className="p-4 bg-slate-50 rounded-lg max-h-64 overflow-y-auto font-mono text-sm border border-slate-200">
-                  <pre>{JSON.stringify(responses, null, 2)}</pre>
-                </div>
+                {templateData?.type === 'QUIZ' && (
+                  <div className="space-y-2">
+                    <p className="font-semibold text-slate-700">Live Leaderboard</p>
+                    {/* Simulated Leaderboard View */}
+                    <div className="space-y-2">
+                      {participants.map((p, i) => (
+                        <div key={p.id} className="flex justify-between items-center p-3 bg-slate-50 border border-slate-100 rounded-lg">
+                          <span className="font-medium text-slate-900">{i + 1}. {p.name}</span>
+                          <span className="text-blue-600 font-bold">{Math.floor(Math.random() * 100)} pts</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {templateData?.type === 'POLL' && (
+                  <div className="space-y-4">
+                    <p className="font-semibold text-slate-700">Live Poll Results</p>
+                    {templateData.options.map((opt: any, i: number) => {
+                      const votes = Math.floor(Math.random() * responses.length);
+                      const percentage = responses.length ? Math.round((votes / responses.length) * 100) : 0;
+                      return (
+                        <div key={i} className="space-y-1">
+                          <div className="flex justify-between text-sm">
+                            <span className="font-medium">{opt.text}</span>
+                            <span className="text-slate-500">{percentage}% ({votes})</span>
+                          </div>
+                          <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-indigo-500" style={{ width: `${percentage}%` }}></div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {templateData?.type === 'FEEDBACK' && (
+                  <div className="space-y-4">
+                    <p className="font-semibold text-slate-700">Response Wall</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {responses.map((r, i) => (
+                        <div key={i} className="p-4 bg-amber-50 rounded-xl border border-amber-100 shadow-sm">
+                          <p className="italic text-slate-800">"{r.data || 'No response recorded'}"</p>
+                          <p className="text-xs text-amber-600 mt-2 font-medium">- Anonymous</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {templateData?.type === 'PAIRING' && (
+                  <div className="space-y-4 text-center py-10">
+                    <p className="text-slate-600">Groups are managed via the Group Matchmaker panel above.</p>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>

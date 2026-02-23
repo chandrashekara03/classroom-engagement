@@ -173,7 +173,7 @@ export function TeacherDashboard() {
             <ActionButton href="/teacher/create?type=QUIZ" label="Create Quiz" />
             <ActionButton href="/teacher/create?type=POLL" label="Start Poll" />
             <ActionButton href="/teacher/create?type=FEEDBACK" label="Feedback Board" />
-            <ActionButton href="/teacher/create?type=WORD_RIDDLE" label="Word Riddle" />
+            <ActionButton href="/teacher/create?type=PAIRING" label="Grouping Cards" />
           </CardContent>
         </Card>
       </div>

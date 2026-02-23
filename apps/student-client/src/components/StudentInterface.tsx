@@ -5,7 +5,8 @@ import {
   LogIn, 
   Users, 
   Clock, 
-  Wifi, 
+  Wifi,
+  BookOpen,
   Activity,
   CheckCircle,
   AlertCircle
@@ -75,12 +76,12 @@ export function SessionJoin({ onJoinSession }: SessionJoinProps) {
     <div className="flex flex-col items-center justify-center p-6 space-y-6 min-h-[80vh]">
       {/* Welcome Section */}
       <div className="text-center space-y-4">
-        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
-          <Activity className="w-8 h-8 text-blue-600" />
+        <div className="w-16 h-16 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-center mx-auto shadow-sm">
+          <BookOpen className="w-8 h-8 text-slate-700" strokeWidth={1.5} />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Join Session</h1>
-          <p className="text-slate-600 mt-2">Enter the session code to participate</p>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">CHRIST Student Session</h1>
+          <p className="text-slate-600 mt-2 font-medium">Enter your session details to join</p>
         </div>
       </div>
 
@@ -119,9 +120,8 @@ export function SessionJoin({ onJoinSession }: SessionJoinProps) {
             
             <Button 
               type="submit" 
-              className="w-full" 
+              className="w-full bg-slate-900 hover:bg-slate-800 text-white font-medium shadow-sm transition-all" 
               disabled={isLoading}
-              variant="primary"
             >
               {isLoading ? (
                 <>
@@ -140,11 +140,11 @@ export function SessionJoin({ onJoinSession }: SessionJoinProps) {
       </Card>
       
       {/* Help Text */}
-      <div className="text-center text-sm text-slate-500 space-y-2">
-        <p>Ask your teacher for the 6-digit session code</p>
-        <div className="flex items-center justify-center space-x-2">
-          <Wifi className="w-4 h-4 text-green-500" />
-          <span>Connected</span>
+      <div className="text-center text-sm text-slate-500 space-y-2 mt-8">
+        <p>Ask your instructor for the 6-digit session code</p>
+        <div className="flex items-center justify-center space-x-2 bg-green-50 text-green-700 py-1.5 px-3 rounded-full w-fit mx-auto border border-green-100">
+          <Wifi className="w-3.5 h-3.5" />
+          <span className="font-medium text-xs">System Online</span>
         </div>
       </div>
     </div>

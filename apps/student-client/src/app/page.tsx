@@ -1,187 +1,78 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { SessionJoin, JoinedSession } from '../components/StudentInterface';
-import ActivityParticipation from '../components/ActivityParticipation';
-import type { Activity, ActivityResponse, SessionState as AppSessionState } from '@classroom/shared-utils';
-import { useSocket } from '../hooks/useSocket';
+import Link from "next/link";
+import { BookOpen } from "lucide-react";
 
-interface SessionState {
-  isJoined: boolean;
-  sessionId?: string;
-  studentId?: string;
-  sessionInfo?: {
-    code: string;
-    title: string;
-    teacher: string;
-    participantCount: number;
-    status: 'WAITING' | 'LIVE' | 'PAUSED' | 'COMPLETED';
-  };
-  currentActivity?: Activity;
-  submittedResponses: Set<string>;
-}
-
-import { WifiOff } from 'lucide-react';
-
-export default function StudentPage() {
-  const [sessionState, setSessionState] = useState<SessionState>({
-    isJoined: false,
-    submittedResponses: new Set()
-  });
-
-  const { socket, isConnected, emitEvent } = useSocket(sessionState.sessionId, 'STUDENT');
-
-  useEffect(() => {
-    if (!sessionState.sessionId || typeof window === 'undefined') return;
-    
-    // Fallback broadcast channel listener for current session state updates
-    const bc = new BroadcastChannel(`classroom-session-${sessionState.sessionId}`);
-    
-    bc.onmessage = (event) => {
-      const { type, payload } = event.data;
-      if (type === 'session-started') {
-        const templateData = payload.templateData;
-        
-        // Transform template into activity format
-        const activityMap: Record<string, any> = {
-          'QUIZ': {
-            id: templateData.id,
-            type: 'QUIZ',
-            title: templateData.title,
-            description: '',
-            duration: templateData.config?.timer ? 300 : undefined,
-            questions: templateData.questions || []
-          },
-          'POLL': {
-            id: templateData.id,
-            type: 'POLL',
-            title: templateData.title,
-            description: templateData.question,
-            options: templateData.options || []
-          }
-        };
-
-        setSessionState(prev => ({
-          ...prev,
-          sessionInfo: prev.sessionInfo ? { ...prev.sessionInfo, status: 'LIVE' } : undefined,
-          currentActivity: activityMap[templateData.type] || undefined
-        }));
-      }
-    };
-    
-    return () => bc.close();
-  }, [sessionState.sessionId]);
-
-  const handleJoinSession = async (sessionCode: string, studentName: string) => {
-    let session: any = null;
-    
-    // Try localStorage
-    const sessions = JSON.parse(localStorage.getItem('classroom_sessions') || '[]');
-    session = sessions.find((s: any) => s.code.toUpperCase() === sessionCode.toUpperCase());
-    
-    // Cross-origin mock fallback for the standard test session
-    if (!session && sessionCode === '000000') {
-      session = {
-        id: "session-sample-000000",
-        code: "000000",
-        status: "WAITING"
-      };
-    }
-    
-    if (!session) {
-      throw new Error("Invalid session code or session not found.");
-    }
-
-    const studentId = `stu-${Math.random().toString(36).substr(2, 6)}`;
-
-    setSessionState({
-      isJoined: true,
-      sessionId: session.id,
-      studentId,
-      sessionInfo: {
-        code: sessionCode.toUpperCase(),
-        title: 'Live Classroom Session',
-        teacher: 'Instructor',
-        participantCount: 1,
-        status: session.status || 'WAITING'
-      },
-      currentActivity: undefined,
-      submittedResponses: new Set()
-    });
-
-    // We emit using the broadcast channel mockup logic
-    setTimeout(() => {
-      const bc = new BroadcastChannel(`classroom-session-${session.id}`);
-      bc.postMessage({ type: 'student-joined', payload: { id: studentId, name: studentName } });
-      bc.close();
-    }, 500);
-  };
-
-  const handleLeaveSession = () => {
-    setSessionState({
-      isJoined: false,
-      submittedResponses: new Set()
-    });
-  };
-
-  const handleSubmitResponse = (response: any) => {
-    if (sessionState.currentActivity) {
-      const currentId = sessionState.currentActivity.id;
-      
-      const payload = {
-        activityId: currentId,
-        participantId: sessionState.studentId,
-        data: response,
-        timestamp: Date.now()
-      };
-      
-      const bc = new BroadcastChannel(`classroom-session-${sessionState.sessionId}`);
-      bc.postMessage({ type: 'student-responded', payload });
-      bc.close();
-      
-      setSessionState(prev => ({
-        ...prev,
-        submittedResponses: new Set([...prev.submittedResponses, currentId]),
-        currentActivity: undefined,
-        sessionInfo: prev.sessionInfo ? { ...prev.sessionInfo, status: 'WAITING' } : undefined
-      }));
-    }
-  };
-
-  const isCurrentActivitySubmitted = sessionState.currentActivity 
-    ? sessionState.submittedResponses.has(sessionState.currentActivity.id)
-    : false;
-
-  if (!sessionState.isJoined) {
-    return <SessionJoin onJoinSession={handleJoinSession} />;
-  }
-
+export default function RoleSelectionPage() {
   return (
-    <div className="relative h-full">
-      {!isConnected && (
-        <div className="absolute top-0 left-0 right-0 bg-rose-500 text-white px-4 py-2 text-sm flex items-center justify-center gap-2 z-50">
-          <WifiOff size={16} />
-          <span className="font-medium">You are offline. Trying to reconnect...</span>
-        </div>
-      )}
+    <div className="min-h-screen bg-white flex flex-col font-sans text-slate-900 selection:bg-blue-100 selection:text-blue-900">
       
-      {sessionState.currentActivity ? (
-        <div className="h-full overflow-y-auto pt-10">
-          <ActivityParticipation
-            activity={sessionState.currentActivity}
-            onSubmitResponse={handleSubmitResponse}
-            timeRemaining={sessionState.currentActivity.config?.duration ? sessionState.currentActivity.config.duration * 1000 : undefined}
-            isSubmitted={isCurrentActivitySubmitted}
-          />
+      {/* Small Institutional Top Bar */}
+      <div className="w-full bg-slate-900 py-2 px-6 text-center shadow-sm">
+        <p className="text-xs md:text-sm font-medium text-slate-200 tracking-wide uppercase">
+          CHRIST (Deemed to be University)
+        </p>
+      </div>
+
+      {/* Main Content */}
+      <main className="flex-1 flex flex-col items-center justify-center p-6 space-y-12">
+        
+        {/* Academic Header Section */}
+        <div className="text-center space-y-6 max-w-2xl mx-auto">
+          <div className="w-20 h-20 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-center mx-auto shadow-sm">
+            <BookOpen className="w-10 h-10 text-slate-700" strokeWidth={1.5} />
+          </div>
+          <div className="space-y-4">
+            <h1 className="text-3xl md:text-5xl font-bold tracking-tight text-slate-900">
+              CHRIST Classroom Engagement Platform
+            </h1>
+            <p className="text-lg text-slate-600 font-medium leading-relaxed max-w-xl mx-auto">
+              An integrated academic engagement system designed to facilitate interactive learning and real-time classroom participation.
+            </p>
+          </div>
         </div>
-      ) : (
-        <div className="pt-10 h-full">
-          <JoinedSession
-            sessionInfo={sessionState.sessionInfo!}
-            onLeaveSession={handleLeaveSession}
-          />
+
+        {/* Divider */}
+        <div className="w-16 h-1 bg-blue-600 rounded-full opacity-80"></div>
+
+        {/* Role Selection Box */}
+        <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-300 p-8 space-y-8 relative overflow-hidden">
+          <div className="absolute top-0 right-0 bg-blue-100 px-2 py-1 text-[10px] font-bold text-blue-800 rounded-bl-lg">
+            STUDENT-CLIENT
+          </div>
+          <div className="text-center space-y-2">
+            <h2 className="text-xl font-semibold text-slate-900">Select Your Role</h2>
+            <p className="text-sm text-slate-500">Please choose your access portal</p>
+          </div>
+          
+          <div className="space-y-4">
+            <a 
+              href="http://localhost:3005/teacher/login" 
+              className="w-full flex items-center justify-center px-6 py-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-medium transition-colors shadow-sm focus:ring-2 focus:ring-slate-400 focus:outline-none"
+            >
+              Faculty Portal
+            </a>
+
+            <Link 
+              href="/student/join" 
+              className="w-full flex items-center justify-center px-6 py-4 border-2 border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 rounded-xl font-medium transition-colors focus:ring-2 focus:ring-slate-200 focus:outline-none"
+            >
+              Student Session
+            </Link>
+          </div>
+
         </div>
-      )}
+
+      </main>
+
+      {/* Institutional Footer */}
+      <footer className="w-full py-8 text-center border-t border-slate-100 bg-slate-50">
+        <div className="space-y-1">
+          <p className="text-sm font-semibold text-slate-700">Department of Computer Science</p>
+          <p className="text-xs text-slate-500">Academic Project • CHRIST (Deemed to be University)</p>
+        </div>
+      </footer>
+
     </div>
   );
 }
