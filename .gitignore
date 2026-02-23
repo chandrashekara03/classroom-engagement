@@ -56,3 +56,7 @@ yarn-debug.log*
 pnpm-debug.log*
 *.log
 *.txt
+*build.log
+*build*.log
+*error.log
+*errors.txt
