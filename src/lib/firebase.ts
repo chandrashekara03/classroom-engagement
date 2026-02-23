@@ -1,7 +1,7 @@
 ﻿// Import the functions you need from the SDKs you need
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getDatabase } from 'firebase/database';
+import { getAuth, Auth } from 'firebase/auth';
+import { getDatabase, Database } from 'firebase/database';
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -18,15 +18,15 @@ const firebaseConfig = {
 let app;
 try {
   app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-} catch (e) {
+} catch {
   console.warn('Firebase fallback triggered');
   app = getApps().length ? getApp() : undefined;
 }
 
 // Initialize Firebase Authentication and get a reference to the service
-export const auth = app ? getAuth(app) : null as any;
+export const auth: Auth | null = app ? getAuth(app) : null;
 
 // Initialize Realtime Database and get a reference to the service
-export const database = app ? getDatabase(app) : null as any;
+export const database: Database | null = app ? getDatabase(app) : null;
 
 export { app };

@@ -1,7 +1,6 @@
 import { 
   Activity,
   ActivityResponse,
-  ActivityType,
   QuizActivity,
   QuizResponse,
   PollActivity,
@@ -19,9 +18,7 @@ import {
   Participant,
   Group,
   GroupingStrategy,
-  calculateScore as utilCalculateScore,
-  calculateActivityDuration,
-  isActivityComplete
+  calculateScore as utilCalculateScore
 } from '@classroom/shared-utils';
 
 export class ActivityEngine {
@@ -298,6 +295,7 @@ export class ActivityEngine {
   }
   
   private static avoidPreviousPairings(participants: Participant[], previousGroups: Group[]): Participant[] {
+    void previousGroups;
     // Simple implementation - shuffle and try to avoid recent pairings
     const shuffled = this.shuffleArray(participants);
     // TODO: Implement sophisticated pairing avoidance algorithm

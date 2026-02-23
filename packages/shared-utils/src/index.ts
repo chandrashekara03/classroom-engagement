@@ -341,6 +341,17 @@ export interface SessionAnalytics {
   activityAnalytics: ActivityAnalytics[];
 }
 
+export interface ActivityResultData {
+  type: 'QUIZ' | 'POLL' | 'FEEDBACK' | 'WORD_RIDDLE' | 'TREASURE_HUNT' | 'PAIRING' | 'SCENARIO';
+  summary: {
+    averageScore?: number;
+    totalResponses: number;
+    completionRate: number;
+    averageTime?: number;
+  };
+  details: Record<string, unknown>;
+}
+
 // Real-time Events
 export interface BaseEvent {
   type: string;
@@ -367,7 +378,7 @@ export interface ActivityStartedEvent extends BaseEvent {
 export interface ActivityEndedEvent extends BaseEvent {
   type: 'ACTIVITY_ENDED';
   activityId: string;
-  results?: any;
+  results?: ActivityResultData;
 }
 
 export interface ResponseSubmittedEvent extends BaseEvent {

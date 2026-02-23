@@ -2,9 +2,18 @@
 
 import { useState, useEffect } from 'react';
 import { SessionJoin, JoinedSession } from '@/components/student/StudentInterface';
-import ActivityParticipation from '@/components/student/ActivityParticipation';
-import type { Activity, ActivityResponse, SessionState as AppSessionState } from '@classroom/shared-utils';
+import ActivityParticipation, { type ActivityParticipationResponse } from '@/components/student/ActivityParticipation';
+import type { Activity, SessionStatus } from '@classroom/shared-utils';
 import { useSocket } from '@/hooks/useSocket';
+
+interface StoredSession {
+  id: string;
+  code: string;
+  templateId: string;
+  title: string;
+  status: string;
+  createdAt: string;
+}
 
 interface SessionState {
   isJoined: boolean;
@@ -29,7 +38,7 @@ export default function StudentPage() {
     submittedResponses: new Set()
   });
 
-  const { socket, isConnected, emitEvent } = useSocket(sessionState.sessionId, 'STUDENT');
+  const { isConnected } = useSocket(sessionState.sessionId, 'STUDENT');
 
   useEffect(() => {
     if (!sessionState.sessionId || typeof window === 'undefined') return;
@@ -43,35 +52,106 @@ export default function StudentPage() {
         const templateData = payload.templateData;
         
         // Transform template into activity format
-        const activityMap: Record<string, any> = {
+        const activityMap: Record<string, Activity> = {
           'QUIZ': {
             id: templateData.id,
             type: 'QUIZ',
             title: templateData.title,
             description: '',
-            duration: templateData.config?.timer ? 300 : undefined,
-            questions: templateData.questions || []
+            createdBy: 'system',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            isTemplate: false,
+            questions: templateData.questions || [],
+            config: {
+              duration: templateData.config?.timer ? 300 : undefined,
+              scoringEnabled: true,
+              revealMechanism: 'AUTOMATIC',
+              randomizeContent: false,
+              allowLateJoining: true,
+              showLeaderboard: true,
+              anonymousParticipation: false,
+              questionOrder: 'SEQUENTIAL',
+              showCorrectAnswers: true,
+              allowReview: true
+            }
           },
           'POLL': {
             id: templateData.id,
             type: 'POLL',
             title: templateData.title,
             description: templateData.question,
-            options: templateData.options || []
+            createdBy: 'system',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            isTemplate: false,
+            question: templateData.question,
+            options: templateData.options || [],
+            config: {
+              scoringEnabled: false,
+              revealMechanism: 'AUTOMATIC',
+              randomizeContent: false,
+              allowLateJoining: true,
+              showLeaderboard: false,
+              anonymousParticipation: false,
+              allowMultipleSelections: false,
+              showResultsRealTime: true,
+              allowCustomOptions: false
+            }
           },
           'FEEDBACK': {
             id: templateData.id,
             type: 'FEEDBACK',
             title: templateData.title,
+            description: '',
+            createdBy: 'system',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            isTemplate: false,
             prompt: templateData.prompt || 'Please provide your feedback.',
-            enableRating: false 
+            enableRating: false,
+            categories: ['COMMENT', 'QUESTION', 'SUGGESTION', 'CONCERN'],
+            config: {
+              scoringEnabled: false,
+              revealMechanism: 'AUTOMATIC',
+              randomizeContent: false,
+              allowLateJoining: true,
+              showLeaderboard: false,
+              anonymousParticipation: false,
+              allowLikes: true,
+              allowReporting: false,
+              moderationRequired: false,
+              maxCharacters: 500
+            }
           },
           'PAIRING': {
             id: templateData.id,
             type: 'PAIRING',
             title: templateData.title,
+            description: '',
+            createdBy: 'system',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            isTemplate: false,
             prompt: templateData.prompt || 'Wait for grouping instructions.',
-            groupSize: templateData.groupSize
+            leftItems: templateData.leftItems || [],
+            rightItems: templateData.rightItems || [],
+            groupSize: templateData.groupSize || 2,
+            config: {
+              scoringEnabled: false,
+              revealMechanism: 'AUTOMATIC',
+              randomizeContent: false,
+              allowLateJoining: true,
+              showLeaderboard: false,
+              anonymousParticipation: false,
+              criteria: {
+                type: 'RANDOM',
+                attributes: []
+              },
+              avoidPreviousPairings: false,
+              allowSelfSelection: false,
+              reshuffleAllowed: false
+            }
           }
         };
 
@@ -87,18 +167,21 @@ export default function StudentPage() {
   }, [sessionState.sessionId]);
 
   const handleJoinSession = async (sessionCode: string, studentName: string) => {
-    let session: any = null;
+    let session: StoredSession | null = null;
     
     // Try localStorage
-    const sessions = JSON.parse(localStorage.getItem('classroom_sessions') || '[]');
-    session = sessions.find((s: any) => s.code.toUpperCase() === sessionCode.toUpperCase());
+    const sessions = JSON.parse(localStorage.getItem('classroom_sessions') || '[]') as StoredSession[];
+    session = sessions.find((s) => s.code.toUpperCase() === sessionCode.toUpperCase()) || null;
     
     // Cross-origin mock fallback for the standard test session
     if (!session && sessionCode === '000000') {
       session = {
         id: "session-sample-000000",
         code: "000000",
-        status: "WAITING"
+        templateId: "template-sample",
+        title: "Sample Session",
+        status: "WAITING",
+        createdAt: new Date().toISOString()
       };
     }
     
@@ -117,7 +200,7 @@ export default function StudentPage() {
         title: 'Live Classroom Session',
         teacher: 'Instructor',
         participantCount: 1,
-        status: session.status || 'WAITING'
+        status: (session.status as SessionStatus) || 'SCHEDULED'
       },
       currentActivity: undefined,
       submittedResponses: new Set()
@@ -138,7 +221,7 @@ export default function StudentPage() {
     });
   };
 
-  const handleSubmitResponse = (response: any) => {
+  const handleSubmitResponse = (response: ActivityParticipationResponse) => {
     if (sessionState.currentActivity) {
       const currentId = sessionState.currentActivity.id;
       

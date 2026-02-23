@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Users, UserPlus, UserMinus, Wifi, WifiOff, Eye, EyeOff } from 'lucide-react';
+import { Users, UserPlus, Wifi, WifiOff, Eye, EyeOff } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Badge } from './Badge';
 

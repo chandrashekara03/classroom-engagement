@@ -69,7 +69,7 @@ export function LeaderboardTable({
       </div>
       
       <div className="divide-y divide-slate-100">
-        {displayEntries.map((entry, index) => (
+        {displayEntries.map((entry) => (
           <div
             key={entry.id}
             className={cn(
@@ -86,6 +86,7 @@ export function LeaderboardTable({
                 {showAvatar && (
                   <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center overflow-hidden">
                     {entry.avatar ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
                       <img 
                         src={entry.avatar} 
                         alt={entry.name}

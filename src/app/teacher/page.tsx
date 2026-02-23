@@ -15,15 +15,37 @@ export default function Home() {
 
 export function TeacherDashboard() {
   const router = useRouter();
-  const [templates, setTemplates] = useState<any[]>([]);
-  const [activeSessions, setActiveSessions] = useState<any[]>([]);
+  interface StoredTemplate {
+    id: string;
+    title?: string;
+    type?: string;
+    questions?: Array<{ id: string; text?: string; options?: Array<{ id: string; text: string }>; correctOption?: string; points?: number }>;
+  }
+  interface StoredSession {
+    id: string;
+    code: string;
+    title?: string;
+    templateId?: string;
+    status?: string;
+    createdAt?: string;
+  }
+  interface ActiveSessionSummary {
+    id: string;
+    name: string;
+    status?: string;
+    participants: number;
+    code: string;
+  }
+
+  const [templates, setTemplates] = useState<StoredTemplate[]>([]);
+  const [activeSessions, setActiveSessions] = useState<ActiveSessionSummary[]>([]);
   
   useEffect(() => {
-    const savedTemplates = JSON.parse(localStorage.getItem('classroom_templates') || '[]');
-    const savedSessions = JSON.parse(localStorage.getItem('classroom_sessions') || '[]');
+    const savedTemplates = JSON.parse(localStorage.getItem('classroom_templates') || '[]') as StoredTemplate[];
+    const savedSessions = JSON.parse(localStorage.getItem('classroom_sessions') || '[]') as StoredSession[];
     
     // Inject sample test class
-    if (!savedSessions.find((s: any) => s.code === '000000')) {
+    if (!savedSessions.find((s) => s.code === '000000')) {
       const sampleSession = {
         id: "session-sample-000000",
         code: "000000",
@@ -36,7 +58,7 @@ export function TeacherDashboard() {
       localStorage.setItem('classroom_sessions', JSON.stringify(savedSessions));
     }
     
-    if (!savedTemplates.find((t: any) => t.id === "sample-template")) {
+    if (!savedTemplates.find((t) => t.id === "sample-template")) {
       const sampleTemplate = {
         id: "sample-template",
         title: "Sample Test Class Theme",
@@ -50,7 +72,7 @@ export function TeacherDashboard() {
     }
     
     setTemplates(savedTemplates);
-    setActiveSessions(savedSessions.map((s: any) => ({
+    setActiveSessions(savedSessions.map((s) => ({
       id: s.id,
       name: s.title || `Session ${s.code}`,
       status: s.status,
@@ -60,12 +82,18 @@ export function TeacherDashboard() {
   }, []);
 
   const handleLaunch = (templateId: string) => {
+    // Find template to get the title
+    const template = templates.find(t => t.id === templateId);
+    
     // Generate a random 6 char code
+    // eslint-disable-next-line react-hooks/purity
     const code = Math.random().toString(36).substr(2, 6).toUpperCase();
     const newSession = {
+      // eslint-disable-next-line react-hooks/purity
       id: `session-${Date.now()}`,
       code,
       templateId,
+      title: template?.title || `Session ${code}`,
       status: "WAITING",
       createdAt: new Date().toISOString()
     };

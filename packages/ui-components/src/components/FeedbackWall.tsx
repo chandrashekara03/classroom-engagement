@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { MessageCircle, Heart, ThumbsUp, Flag, User, Clock, Filter } from 'lucide-react';
+import { MessageCircle, Heart, Flag, User, Clock, Filter } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Button } from './Button';
 import { Badge } from './Badge';
@@ -205,6 +205,7 @@ export function FeedbackWall({
                 {/* Avatar */}
                 <div className="flex-shrink-0">
                   {!item.author.anonymous && item.author.avatar ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
                     <img
                       src={item.author.avatar}
                       alt={item.author.name}

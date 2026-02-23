@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
-import type { SessionEvent, SessionState, Activity, ActivityResponse, Participant } from '@classroom/shared-utils';
+import type { SessionState } from '@classroom/shared-utils';
 
 // We export a context or a hook to manage the Socket connection
 export function useSocket(sessionId?: string, role: 'STUDENT' | 'TEACHER' = 'STUDENT') {
@@ -24,6 +24,7 @@ export function useSocket(sessionId?: string, role: 'STUDENT' | 'TEACHER' = 'STU
       autoConnect: true,
     });
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSocket(newSocket);
 
     newSocket.on('connect', () => {
@@ -46,7 +47,7 @@ export function useSocket(sessionId?: string, role: 'STUDENT' | 'TEACHER' = 'STU
     };
   }, [sessionId, role]);
 
-  const emitEvent = useCallback((eventName: string, data: any) => {
+  const emitEvent = useCallback((eventName: string, data: unknown) => {
     if (socket && isConnected) {
       socket.emit(eventName, data);
     } else {
@@ -67,8 +68,7 @@ export function useSocket(sessionId?: string, role: 'STUDENT' | 'TEACHER' = 'STU
     if (typeof window === 'undefined') return;
     
     const bc = new BroadcastChannel(`classroom-session-${sessionId || 'global'}`);
-    bc.onmessage = (event) => {
-      const { type, payload } = event.data;
+    bc.onmessage = () => {
       if (socket) {
         // We can simulate receiving a socket event
         // socket.emit locally doesn't trigger .on, but we can manually trigger state updates

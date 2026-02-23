@@ -2,7 +2,12 @@
 
 import { Users } from "lucide-react";
 
-export function GroupingBuilder({ data, onChange }: { data: any, onChange: (d: any) => void }) {
+interface GroupingData {
+  prompt?: string;
+  groupSize?: number;
+}
+
+export function GroupingBuilder({ data, onChange }: { data: GroupingData, onChange: (d: GroupingData) => void }) {
   return (
     <div className="space-y-6">
       <div className="space-y-2">
