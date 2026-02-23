@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@source "../../../packages/ui-components";
 @import "@classroom/ui-components/src/index.css" layer(base);
 
 :root {

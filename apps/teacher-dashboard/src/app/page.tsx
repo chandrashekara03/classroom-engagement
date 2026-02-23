@@ -1,48 +1,78 @@
 "use client";
 
 import Link from "next/link";
-import { Activity } from "lucide-react";
+import { BookOpen } from "lucide-react";
 
 export default function GlobalLandingPage() {
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center text-slate-900">
-      <div className="max-w-3xl space-y-8">
-        
-        <div className="w-24 h-24 bg-blue-100 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-sm">
-          <Activity className="w-12 h-12 text-blue-600" />
-        </div>
-        
-        <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight text-slate-900 leading-tight">
-          Classroom Engagement Platform
-        </h1>
-        
-        <p className="text-xl text-slate-600 max-w-2xl mx-auto font-medium">
-          A unified platform for interactive classroom activities, quizzes, polls, and real-time engagement without limitations.
+    <div className="min-h-screen bg-white flex flex-col font-sans text-slate-900 selection:bg-blue-100 selection:text-blue-900">
+      
+      {/* Small Institutional Top Bar */}
+      <div className="w-full bg-slate-900 py-2 px-6 text-center shadow-sm">
+        <p className="text-xs md:text-sm font-medium text-slate-200 tracking-wide uppercase">
+          CHRIST (Deemed to be University)
         </p>
-
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-12">
-          {/* Link to the teacher dashboard route group, which we just moved to (dashboard)/page.tsx */}
-          {/* Note: In Next.js App Router, the root (/) matches page.tsx here. So to go to the dashboard, 
-              we need a specific route, OR we need the dashboard to be at e.g. /teacher and this at /.
-              Let's make this page the root (/) and move the dashboard to /teacher. */}
-          <Link 
-            href="/teacher" 
-            className="w-full sm:w-auto px-10 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-lg shadow-lg shadow-blue-600/20 transition-all hover:scale-105"
-          >
-            I'm a Teacher
-          </Link>
-
-          {/* This directs them to the port where the Student Client handles connections */}
-          {/* Since we are working with two Next.js apps on different ports during dev, we link to the other port natively. */}
-          <a 
-            href="http://localhost:3001" 
-            className="w-full sm:w-auto px-10 py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-lg shadow-lg shadow-emerald-600/20 transition-all hover:scale-105"
-          >
-            I'm a Student
-          </a>
-        </div>
-        
       </div>
+
+      {/* Main Content */}
+      <main className="flex-1 flex flex-col items-center justify-center p-6 space-y-12">
+        
+        {/* Academic Header Section */}
+        <div className="text-center space-y-6 max-w-2xl mx-auto">
+          <div className="w-20 h-20 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-center mx-auto shadow-sm">
+            <BookOpen className="w-10 h-10 text-slate-700" strokeWidth={1.5} />
+          </div>
+          <div className="space-y-4">
+            <h1 className="text-3xl md:text-5xl font-bold tracking-tight text-slate-900">
+              CHRIST Classroom Engagement Platform
+            </h1>
+            <p className="text-lg text-slate-600 font-medium leading-relaxed max-w-xl mx-auto">
+              An integrated academic engagement system designed to facilitate interactive learning and real-time classroom participation.
+            </p>
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div className="w-16 h-1 bg-blue-600 rounded-full opacity-80"></div>
+
+        {/* Role Selection Box */}
+        <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-300 p-8 space-y-8 relative overflow-hidden">
+          <div className="absolute top-0 right-0 bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-800 rounded-bl-lg">
+            TEACHER-DASHBOARD
+          </div>
+          <div className="text-center space-y-2">
+            <h2 className="text-xl font-semibold text-slate-900">Select Your Role</h2>
+            <p className="text-sm text-slate-500">Please choose your access portal</p>
+          </div>
+          
+          <div className="space-y-4">
+            <Link 
+              href="/teacher/login" 
+              className="w-full flex items-center justify-center px-6 py-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-medium transition-colors shadow-sm focus:ring-2 focus:ring-slate-400 focus:outline-none"
+            >
+              Faculty Portal
+            </Link>
+
+            <a 
+              href="http://localhost:3001/student/join" 
+              className="w-full flex items-center justify-center px-6 py-4 border-2 border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 rounded-xl font-medium transition-colors focus:ring-2 focus:ring-slate-200 focus:outline-none"
+            >
+              Student Session
+            </a>
+          </div>
+
+        </div>
+
+      </main>
+
+      {/* Institutional Footer */}
+      <footer className="w-full py-8 text-center border-t border-slate-100 bg-slate-50">
+        <div className="space-y-1">
+          <p className="text-sm font-semibold text-slate-700">Department of Computer Science</p>
+          <p className="text-xs text-slate-500">Academic Project • CHRIST (Deemed to be University)</p>
+        </div>
+      </footer>
+
     </div>
   );
 }

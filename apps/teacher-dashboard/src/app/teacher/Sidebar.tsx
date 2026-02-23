@@ -15,6 +15,7 @@ import {
 import { Button } from '@classroom/ui-components';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface SidebarProps {
   className?: string;
@@ -62,6 +63,7 @@ const navigationItems = [
 export function Sidebar({ className }: SidebarProps) {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const pathname = usePathname();
+  const { user, logout } = useAuth();
 
   return (
     <>
@@ -97,8 +99,8 @@ export function Sidebar({ className }: SidebarProps) {
                 <Activity className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-lg font-semibold text-slate-900">Classroom</h1>
-                <p className="text-xs text-slate-500">Teacher Dashboard</p>
+                <h1 className="text-lg font-semibold text-slate-900 leading-tight">CHRIST Classroom Engagement</h1>
+                <p className="text-xs text-slate-500 font-medium">Faculty Dashboard</p>
               </div>
             </div>
           </div>
@@ -131,19 +133,26 @@ export function Sidebar({ className }: SidebarProps) {
           {/* User section */}
           <div className="px-4 py-4 border-t border-slate-200">
             <div className="flex items-center space-x-3 mb-4">
-              <div className="w-8 h-8 bg-slate-300 rounded-full flex items-center justify-center">
-                <span className="text-sm font-medium text-slate-700">JD</span>
+              <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center border border-slate-200">
+                <span className="text-sm font-bold text-slate-700">
+                  {user?.displayName ? user.displayName.charAt(0).toUpperCase() : 'F'}
+                </span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-900 truncate">John Doe</p>
-                <p className="text-xs text-slate-500 truncate">Mathematics Professor</p>
+                <p className="text-sm font-medium text-slate-900 truncate">
+                  {user?.displayName || 'Faculty Member'}
+                </p>
+                <p className="text-xs text-slate-500 truncate">
+                  {user?.email || 'faculty@christuniversity.in'}
+                </p>
               </div>
             </div>
             
             <Button 
               variant="ghost" 
               size="sm" 
-              className="w-full justify-start text-slate-600 hover:text-slate-900"
+              onClick={logout}
+              className="w-full justify-start text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors"
             >
               <LogOut className="mr-3 h-4 w-4" />
               Sign Out

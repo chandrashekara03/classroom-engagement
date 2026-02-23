@@ -16,7 +16,7 @@ export function SessionStatusIndicator({ status, className }: SessionStatusIndic
     PAUSED: { color: "bg-slate-100 text-slate-700", label: "Paused" },
   };
 
-  const config = statusConfig[status];
+  const config = statusConfig[status || 'WAITING'] || { color: "bg-slate-100 text-slate-700", label: status || "Unknown" };
 
   return (
     <span className={cn(

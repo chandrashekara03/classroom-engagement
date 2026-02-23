@@ -8,6 +8,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { QuizBuilder } from "../../../components/activity-builder/QuizBuilder";
 import { PollBuilder } from "../../../components/activity-builder/PollBuilder";
+import { FeedbackBuilder } from "../../../components/activity-builder/FeedbackBuilder";
+import { GroupingBuilder } from "../../../components/activity-builder/GroupingBuilder";
 
 export default function CreateActivity() {
   const router = useRouter();
@@ -29,7 +31,7 @@ export default function CreateActivity() {
     { type: "QUIZ", label: "Quiz", description: "Standard multiple-choice or short answer assessment." },
     { type: "POLL", label: "Live Poll", description: "Collect instant feedback or opinions from students." },
     { type: "FEEDBACK", label: "Feedback Board", description: "Open-ended digital sticky notes for thoughts." },
-    { type: "WORD_RIDDLE", label: "Word Riddle", description: "Interactive vocabulary or concept puzzle." },
+    { type: "PAIRING", label: "Grouping", description: "Automatically pair or group students instantly." },
   ];
 
   const handleSave = () => {
@@ -89,6 +91,15 @@ export default function CreateActivity() {
                     question: "",
                     options: [{ id: 'opt-1', text: '' }, { id: 'opt-2', text: '' }]
                   });
+                } else if (item.type === "FEEDBACK") {
+                  setActivityData({
+                    prompt: ""
+                  });
+                } else if (item.type === "PAIRING") {
+                  setActivityData({
+                    prompt: "",
+                    groupSize: 4
+                  });
                 }
               }}
               className="text-left p-6 rounded-xl border-2 border-slate-100 hover:border-blue-500 hover:bg-blue-50 transition-all group"
@@ -119,7 +130,10 @@ export default function CreateActivity() {
               <div className="pt-4 border-t border-slate-100">
                 {type === "QUIZ" && <QuizBuilder data={activityData} onChange={setActivityData} />}
                 {type === "POLL" && <PollBuilder data={activityData} onChange={setActivityData} />}
-                {type !== "QUIZ" && type !== "POLL" && (
+                {type === "FEEDBACK" && <FeedbackBuilder data={activityData} onChange={setActivityData} />}
+                {type === "PAIRING" && <GroupingBuilder data={activityData} onChange={setActivityData} />}
+                
+                {type !== "QUIZ" && type !== "POLL" && type !== "FEEDBACK" && type !== "PAIRING" && (
                   <div className="p-4 rounded-lg bg-orange-50 border border-orange-100 text-orange-600 text-sm flex items-center gap-2">
                     <LucideSettings size={16} />
                     Builder for {type} is under construction. You can still save it as a draft.

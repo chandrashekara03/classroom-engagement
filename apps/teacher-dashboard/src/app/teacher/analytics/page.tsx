@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, Button } from "@classroom/ui-components";
-import { LucideBarChart4, LucideDownload, LucideUsers, LucideActivity, LucideTrendingUp, LucideArrowLeft } from "lucide-react";
+import { LucideBarChart4, LucideDownload, LucideUsers, LucideActivity, LucideTrendingUp, LucideArrowLeft, LucidePieChart } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from "recharts";
 
 export default function AnalyticsPage() {
   const router = useRouter();
@@ -35,6 +36,14 @@ export default function AnalyticsPage() {
   const completedSessions = sessions.filter(s => s.status === 'COMPLETED').length;
   const activeSessions = sessions.filter(s => s.status === 'LIVE').length;
   const totalSessions = sessions.length;
+
+  const chartData = [
+    { name: "0-20%", students: 4 },
+    { name: "21-40%", students: 7 },
+    { name: "41-60%", students: 12 },
+    { name: "61-80%", students: 28 },
+    { name: "81-100%", students: 43 },
+  ];
 
   return (
     <div className="space-y-6">
@@ -84,6 +93,63 @@ export default function AnalyticsPage() {
           <CardContent>
             <div className="text-3xl font-bold">{completedSessions}</div>
             <p className="text-xs text-slate-500 mt-1">Archived session data</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <LucideBarChart4 size={18} className="text-blue-600" />
+              Global Grade Distribution
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64 w-full mt-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
+                  <RechartsTooltip 
+                    cursor={{ fill: '#f8fafc' }}
+                    contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                  />
+                  <Bar dataKey="students" radius={[4, 4, 0, 0]}>
+                    {chartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={index === chartData.length - 1 ? '#10b981' : '#3b82f6'} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <p className="text-sm text-slate-500 text-center mt-4">Distribution of average scores across all Quiz activities</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <LucidePieChart size={18} className="text-indigo-600" />
+              Activity Type Breakdown
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col items-center justify-center h-64 mt-4">
+               {/* Simplified representation for prototype without importing full PieChart */}
+               <div className="flex w-full h-8 rounded-full overflow-hidden shadow-sm mb-8">
+                 <div className="bg-blue-500 w-1/2 flex items-center justify-center text-white text-xs font-bold">50% Quizzes</div>
+                 <div className="bg-indigo-400 w-1/4 flex items-center justify-center text-white text-xs font-bold">25% Polls</div>
+                 <div className="bg-amber-400 w-1/6 flex items-center justify-center text-white text-xs font-bold">15% Feedback</div>
+                 <div className="bg-emerald-400 w-1/12 flex items-center justify-center text-white text-xs font-bold">10%</div>
+               </div>
+               
+               <div className="grid grid-cols-2 gap-x-8 gap-y-4 w-full px-8 text-sm">
+                 <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-blue-500"></div> <span className="text-slate-700 font-medium">Quizzes (50%)</span></div>
+                 <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-indigo-400"></div> <span className="text-slate-700 font-medium">Polls (25%)</span></div>
+                 <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-amber-400"></div> <span className="text-slate-700 font-medium">Feedback (15%)</span></div>
+                 <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-emerald-400"></div> <span className="text-slate-700 font-medium">Grouping (10%)</span></div>
+               </div>
           </CardContent>
         </Card>
       </div>
