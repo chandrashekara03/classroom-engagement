@@ -48,6 +48,10 @@ node_modules/
 
 # Env
 .env
+
+# Firebase service account keys
+*firebase*adminsdk*.json
+classroom-engagement-christ-firebase-adminsdk-fbsvc-c779c3560f.json
 .env.local
 
 # Logs
