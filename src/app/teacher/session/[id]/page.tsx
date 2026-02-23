@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, SessionStatusIndicator, GroupDisplay, Button } from "@classroom/ui-components";
 import { LucidePlay, LucidePause, LucideSquare, LucideUsers, LucideTimer, LucideBarChart3, LucideDices, LucideUserPlus, LucideX } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import { useSocket } from "../../../../hooks/useSocket";
+import { useSocket } from "@/hooks/useSocket";
 
 export default function SessionManager() {
   const { id } = useParams();

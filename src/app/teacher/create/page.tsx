@@ -6,10 +6,10 @@ import { ActivityType } from "@classroom/shared-utils";
 import { LucideChevronLeft, LucideSave, LucideTimer, LucideTrophy, LucideSettings } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { QuizBuilder } from "../../../components/activity-builder/QuizBuilder";
-import { PollBuilder } from "../../../components/activity-builder/PollBuilder";
-import { FeedbackBuilder } from "../../../components/activity-builder/FeedbackBuilder";
-import { GroupingBuilder } from "../../../components/activity-builder/GroupingBuilder";
+import { QuizBuilder } from "@/components/teacher/activity-builder/QuizBuilder";
+import { PollBuilder } from "@/components/teacher/activity-builder/PollBuilder";
+import { FeedbackBuilder } from "@/components/teacher/activity-builder/FeedbackBuilder";
+import { GroupingBuilder } from "@/components/teacher/activity-builder/GroupingBuilder";
 
 export default function CreateActivity() {
   const router = useRouter();

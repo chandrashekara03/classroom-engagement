@@ -15,7 +15,7 @@ import {
 import { Button } from '@classroom/ui-components';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface SidebarProps {
   className?: string;
