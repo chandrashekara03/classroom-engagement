@@ -41,7 +41,7 @@ export function TeacherDashboard() {
             teacherId: user.uid,
             code: "000000",
             title: "Sample Checking Class",
-            status: "WAITING",
+            status: "SCHEDULED",
             createdAt: new Date().toISOString(),
             participants: {}
           };
@@ -84,7 +84,7 @@ export function TeacherDashboard() {
         teacherId: user.uid,
         code,
         title: templates.find(t => t.id === templateId)?.title || 'New Session',
-        status: "WAITING",
+        status: "SCHEDULED",
         createdAt: new Date().toISOString(),
         participants: {}
       };

@@ -1,5 +1,6 @@
 import { ref, set, get, update, remove, onValue, off } from 'firebase/database';
 import { database } from './firebase';
+import { SessionStatus } from '@classroom/shared-utils';
 
 export interface Teacher {
   uid: string;
@@ -25,7 +26,7 @@ export interface Session {
   teacherId: string;
   title: string;
   code: string;
-  status: 'WAITING' | 'ACTIVE' | 'ENDED';
+  status: SessionStatus;
   createdAt: string;
   participants: { [key: string]: Student };
 }
