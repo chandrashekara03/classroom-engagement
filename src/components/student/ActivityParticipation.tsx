@@ -3,11 +3,9 @@
 import { useState, useEffect } from 'react';
 import { 
   Check, 
-  Clock, 
   Send, 
   Star, 
   ArrowRight, 
-  Users,
   MessageCircle,
   Search,
   MapPin,
@@ -39,10 +37,19 @@ import type {
 
 interface ActivityParticipationProps {
   activity: Activity;
-  onSubmitResponse: (response: ActivityResponse) => void;
+  onSubmitResponse: (response: ActivityParticipationResponse) => void;
   timeRemaining?: number;
   isSubmitted?: boolean;
 }
+
+type PrototypeResponse = {
+  type: Activity['type'];
+  activityId: string;
+  timestamp: number;
+  [key: string]: unknown;
+};
+
+export type ActivityParticipationResponse = ActivityResponse | PrototypeResponse;
 
 export default function ActivityParticipation({ 
   activity, 
@@ -50,7 +57,7 @@ export default function ActivityParticipation({
   timeRemaining,
   isSubmitted = false 
 }: ActivityParticipationProps) {
-  const [response, setResponse] = useState<any>(null);
+  const [response, setResponse] = useState<ActivityParticipationResponse | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const handleSubmit = async () => {
@@ -192,7 +199,7 @@ function QuizParticipation({
   isSubmitted 
 }: { 
   activity: QuizActivity; 
-  onResponseChange: (response: any) => void;
+  onResponseChange: (response: ActivityParticipationResponse) => void;
   isSubmitted: boolean;
 }) {
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string | string[]>>({});
@@ -280,7 +287,7 @@ function PollParticipation({
   isSubmitted
 }: {
   activity: PollActivity;
-  onResponseChange: (response: any) => void;
+  onResponseChange: (response: ActivityParticipationResponse) => void;
   isSubmitted: boolean;
 }) {
   const [selectedOption, setSelectedOption] = useState<string>('');
@@ -334,7 +341,7 @@ function FeedbackParticipation({
   isSubmitted
 }: {
   activity: FeedbackActivity;
-  onResponseChange: (response: any) => void;
+  onResponseChange: (response: ActivityParticipationResponse) => void;
   isSubmitted: boolean;
 }) {
   const [feedback, setFeedback] = useState('');
@@ -410,7 +417,7 @@ function WordRiddleParticipation({
   isSubmitted
 }: {
   activity: WordRiddleActivity;
-  onResponseChange: (response: any) => void;
+  onResponseChange: (response: ActivityParticipationResponse) => void;
   isSubmitted: boolean;
 }) {
   const [answer, setAnswer] = useState('');
@@ -475,7 +482,7 @@ function TreasureHuntParticipation({
   isSubmitted
 }: {
   activity: TreasureHuntActivity;
-  onResponseChange: (response: any) => void;
+  onResponseChange: (response: ActivityParticipationResponse) => void;
   isSubmitted: boolean;
 }) {
   const [currentClue, setCurrentClue] = useState(0);
@@ -584,7 +591,7 @@ function PairingParticipation({
   isSubmitted
 }: {
   activity: PairingActivity;
-  onResponseChange: (response: any) => void;
+  onResponseChange: (response: ActivityParticipationResponse) => void;
   isSubmitted: boolean;
 }) {
   const [pairs, setPairs] = useState<Array<{ leftId: string; rightId: string }>>([]);
@@ -662,7 +669,7 @@ function ScenarioParticipation({
   isSubmitted
 }: {
   activity: ScenarioActivity;
-  onResponseChange: (response: any) => void;
+  onResponseChange: (response: ActivityParticipationResponse) => void;
   isSubmitted: boolean;
 }) {
   const [selectedChoice, setSelectedChoice] = useState<string>('');

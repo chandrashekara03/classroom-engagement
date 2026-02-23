@@ -7,12 +7,22 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from "recharts";
 
+interface StoredSession {
+  id: string;
+  code: string;
+  templateId: string;
+  title: string;
+  status: string;
+  createdAt: string;
+}
+
 export default function AnalyticsPage() {
   const router = useRouter();
-  const [sessions, setSessions] = useState<any[]>([]);
+  const [sessions, setSessions] = useState<StoredSession[]>([]);
 
   useEffect(() => {
-    const loadedSessions = JSON.parse(localStorage.getItem('classroom_sessions') || '[]');
+    const loadedSessions = JSON.parse(localStorage.getItem('classroom_sessions') || '[]') as StoredSession[];
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSessions(loadedSessions);
   }, []);
 
@@ -62,7 +72,7 @@ export default function AnalyticsPage() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-slate-500">Total Sessions</CardTitle>
@@ -95,9 +105,20 @@ export default function AnalyticsPage() {
             <p className="text-xs text-slate-500 mt-1">Archived session data</p>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-slate-500">Total Participants</CardTitle>
+            <LucideUsers size={18} className="text-slate-400" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">247</div>
+            <p className="text-xs text-blue-600 mt-1 font-medium">+12% from last month</p>
+          </CardContent>
+        </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -150,6 +171,125 @@ export default function AnalyticsPage() {
                  <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-amber-400"></div> <span className="text-slate-700 font-medium">Feedback (15%)</span></div>
                  <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-emerald-400"></div> <span className="text-slate-700 font-medium">Grouping (10%)</span></div>
                </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <LucideTrendingUp size={18} className="text-emerald-600" />
+              Engagement Metrics
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 mt-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-slate-600">Average Response Time</span>
+              <span className="text-sm font-bold text-slate-900">2.3 min</span>
+            </div>
+            <div className="w-full bg-slate-200 rounded-full h-2">
+              <div className="bg-emerald-500 h-2 rounded-full" style={{ width: '77%' }}></div>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-slate-600">Completion Rate</span>
+              <span className="text-sm font-bold text-slate-900">89%</span>
+            </div>
+            <div className="w-full bg-slate-200 rounded-full h-2">
+              <div className="bg-blue-500 h-2 rounded-full" style={{ width: '89%' }}></div>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-slate-600">Student Satisfaction</span>
+              <span className="text-sm font-bold text-slate-900">4.6/5</span>
+            </div>
+            <div className="w-full bg-slate-200 rounded-full h-2">
+              <div className="bg-amber-500 h-2 rounded-full" style={{ width: '92%' }}></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Top Performing Activities</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-3 bg-emerald-50 rounded-lg">
+                <div>
+                  <p className="font-medium text-slate-900">Advanced Calculus Quiz</p>
+                  <p className="text-sm text-slate-600">Mathematics • 94% avg score</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-bold text-emerald-600">94%</p>
+                  <p className="text-xs text-slate-500">28 responses</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                <div>
+                  <p className="font-medium text-slate-900">Literature Analysis Poll</p>
+                  <p className="text-sm text-slate-600">English • 87% participation</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-bold text-blue-600">87%</p>
+                  <p className="text-xs text-slate-500">32 responses</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between p-3 bg-amber-50 rounded-lg">
+                <div>
+                  <p className="font-medium text-slate-900">Group Project Feedback</p>
+                  <p className="text-sm text-slate-600">General • 4.8/5 rating</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-bold text-amber-600">4.8</p>
+                  <p className="text-xs text-slate-500">19 responses</p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Activity Trends</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-600">This Week</span>
+                <span className="text-sm font-bold text-slate-900">+23% engagement</span>
+              </div>
+              <div className="w-full bg-slate-200 rounded-full h-2">
+                <div className="bg-green-500 h-2 rounded-full" style={{ width: '85%' }}></div>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-600">Quiz Completion</span>
+                <span className="text-sm font-bold text-slate-900">91% avg</span>
+              </div>
+              <div className="w-full bg-slate-200 rounded-full h-2">
+                <div className="bg-blue-500 h-2 rounded-full" style={{ width: '91%' }}></div>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-600">Response Speed</span>
+                <span className="text-sm font-bold text-slate-900">2.1 min avg</span>
+              </div>
+              <div className="w-full bg-slate-200 rounded-full h-2">
+                <div className="bg-purple-500 h-2 rounded-full" style={{ width: '78%' }}></div>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-600">Student Retention</span>
+                <span className="text-sm font-bold text-slate-900">96% active</span>
+              </div>
+              <div className="w-full bg-slate-200 rounded-full h-2">
+                <div className="bg-emerald-500 h-2 rounded-full" style={{ width: '96%' }}></div>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>

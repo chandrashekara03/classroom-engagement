@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { onAuthStateChanged, User, signInWithEmailAndPassword, signOut as firebaseSignOut } from 'firebase/auth';
+import { onAuthStateChanged, User, signOut as firebaseSignOut } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { dbService, Teacher, Student } from '../lib/database';
 import { useRouter } from 'next/navigation';
@@ -39,10 +39,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Check if we have valid firebase config or just dummy variables
-    if (auth.app.options.apiKey === "dummy-api-key") {
+    if (auth.app.options.apiKey?.startsWith("dummy-api-key")) {
       console.warn("Firebase using mock configuration. Injecting mock user.");
       const mockSession = localStorage.getItem('mock_faculty_auth');
       if (mockSession === 'true') {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setUser({ uid: 'admin-001', email: 'professor@christuniversity.in', displayName: 'Mock Faculty' } as User);
         setUserType('teacher');
         setTeacherData({

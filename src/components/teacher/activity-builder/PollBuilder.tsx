@@ -1,9 +1,17 @@
 "use client";
 
-import { useState } from "react";
 import { Plus, Trash } from "lucide-react";
 
-export function PollBuilder({ data, onChange }: { data: any, onChange: (d: any) => void }) {
+interface PollOption {
+  id: string;
+  text: string;
+}
+
+interface PollData {
+  options: PollOption[];
+}
+
+export function PollBuilder({ data, onChange }: { data: PollData, onChange: (d: PollData) => void }) {
   const updateOption = (index: number, text: string) => {
     const newOptions = [...data.options];
     newOptions[index] = { ...newOptions[index], text };
@@ -13,7 +21,7 @@ export function PollBuilder({ data, onChange }: { data: any, onChange: (d: any) 
   const removeOption = (index: number) => {
     onChange({
       ...data,
-      options: data.options.filter((_: any, i: number) => i !== index)
+      options: data.options.filter((_, i: number) => i !== index)
     });
   };
 
@@ -41,7 +49,7 @@ export function PollBuilder({ data, onChange }: { data: any, onChange: (d: any) 
 
       <div className="space-y-3">
         <label className="text-sm font-medium text-slate-700">Options</label>
-        {data.options.map((opt: any, i: number) => (
+        {data.options.map((opt: PollOption, i: number) => (
           <div key={opt.id} className="flex items-center gap-3">
             <div className="w-6 h-6 rounded bg-slate-100 text-slate-500 flex items-center justify-center text-xs font-bold">
               {String.fromCharCode(65 + i)}

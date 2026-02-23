@@ -87,7 +87,7 @@ export function Sidebar({ className }: SidebarProps) {
       )}
 
       {/* Sidebar */}
-      <div className={`
+      <div className={`${className || ''}
         fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-200 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0
         ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>

@@ -20,16 +20,16 @@ const firebaseConfig = {
 let app;
 try {
   app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-} catch (e) {
+} catch {
   console.warn('Firebase fallback triggered');
   app = getApps().length ? getApp() : undefined;
 }
 
 // Initialize Firebase Authentication and get a reference to the service
-export const auth = app ? getAuth(app) : null as any;
+export const auth: Auth | null = app ? getAuth(app) : null;
 
 // Initialize Realtime Database and get a reference to the service
-export const database = app ? getDatabase(app) : null as any;
+export const database: Database | null = app ? getDatabase(app) : null;
 
 // Initialize Analytics (only on client side)
 export const analytics = (app && typeof window !== 'undefined') ? getAnalytics(app) : null as Analytics | null;

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle, Input, Button } from '@classroom/ui-components';
+import { Card, CardContent, Input, Button } from '@classroom/ui-components';
 import { Activity, Lock, Mail, AlertCircle } from 'lucide-react';
 
 export default function LoginPage() {
@@ -39,7 +39,7 @@ export default function LoginPage() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       router.push('/teacher');
-    } catch (err: any) {
+    } catch {
       setError('Invalid email or password.');
       setIsLoading(false);
     }
@@ -123,7 +123,7 @@ export default function LoginPage() {
       
       {isMocked && (
         <p className="text-xs text-slate-400 mt-8 text-center max-w-xs">
-          (Development Mode: Sign in with any *christuniversity.in* email or 'admin' to bypass Firebase)
+          (Development Mode: Sign in with any *christuniversity.in* email or &apos;admin&apos; to bypass Firebase)
         </p>
       )}
 

@@ -1,9 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { BarChart3, Users, Percent } from 'lucide-react';
+import { BarChart3, Users } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { Progress } from './Progress';
 import { Badge } from './Badge';
 
 interface PollOption {

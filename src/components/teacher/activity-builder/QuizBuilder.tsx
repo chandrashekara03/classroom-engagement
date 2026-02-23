@@ -1,9 +1,27 @@
 "use client";
 
-import { useState } from "react";
-import { Copy, Plus, Trash } from "lucide-react";
+import { Plus, Trash } from "lucide-react";
 
-export function QuizBuilder({ data, onChange }: { data: any, onChange: (d: any) => void }) {
+interface QuizOption {
+  id: string;
+  text: string;
+  isCorrect: boolean;
+}
+
+interface QuizQuestion {
+  id: string;
+  text: string;
+  type: string;
+  points: number;
+  options: QuizOption[];
+  correctAnswers: string[];
+}
+
+interface QuizData {
+  questions: QuizQuestion[];
+}
+
+export function QuizBuilder({ data, onChange }: { data: QuizData, onChange: (d: QuizData) => void }) {
   const handleAddQuestion = () => {
     const qLabel = `Question ${data.questions.length + 1}`;
     onChange({
@@ -25,7 +43,7 @@ export function QuizBuilder({ data, onChange }: { data: any, onChange: (d: any) 
     });
   };
 
-  const updateQuestion = (index: number, updates: any) => {
+  const updateQuestion = (index: number, updates: Partial<QuizQuestion>) => {
     const newQuestions = [...data.questions];
     newQuestions[index] = { ...newQuestions[index], ...updates };
     onChange({ ...data, questions: newQuestions });
@@ -34,7 +52,7 @@ export function QuizBuilder({ data, onChange }: { data: any, onChange: (d: any) 
   const removeQuestion = (index: number) => {
     onChange({
       ...data,
-      questions: data.questions.filter((_: any, i: number) => i !== index)
+      questions: data.questions.filter((_, i: number) => i !== index)
     });
   };
 
@@ -50,7 +68,7 @@ export function QuizBuilder({ data, onChange }: { data: any, onChange: (d: any) 
         </button>
       </div>
 
-      {data.questions.map((q: any, i: number) => (
+      {data.questions.map((q: QuizQuestion, i: number) => (
         <div key={q.id} className="p-4 rounded-xl border border-slate-200 bg-white space-y-4">
           <div className="flex items-start justify-between">
             <input
@@ -66,14 +84,14 @@ export function QuizBuilder({ data, onChange }: { data: any, onChange: (d: any) 
           </div>
 
           <div className="space-y-3 pl-4 border-l-2 border-slate-100">
-            {q.options.map((opt: any, optIndex: number) => (
+            {q.options.map((opt: QuizOption, optIndex: number) => (
               <div key={opt.id} className="flex items-center gap-3">
                 <input
                   type="radio"
                   name={`correct-${q.id}`}
                   checked={opt.isCorrect}
                   onChange={() => {
-                    const newOpts = q.options.map((o: any, idx: number) => ({ ...o, isCorrect: idx === optIndex }));
+                    const newOpts = q.options.map((o: QuizOption, idx: number) => ({ ...o, isCorrect: idx === optIndex }));
                     updateQuestion(i, { options: newOpts });
                   }}
                   className="w-4 h-4 text-blue-600"
@@ -90,7 +108,7 @@ export function QuizBuilder({ data, onChange }: { data: any, onChange: (d: any) 
                 />
                 <button
                   onClick={() => {
-                    const newOpts = q.options.filter((_: any, idx: number) => idx !== optIndex);
+                    const newOpts = q.options.filter((_, idx: number) => idx !== optIndex);
                     updateQuestion(i, { options: newOpts });
                   }}
                   className="text-slate-400 hover:text-red-500"

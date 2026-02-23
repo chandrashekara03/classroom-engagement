@@ -4,7 +4,7 @@ class MockSocketServer extends EventEmitter {
   private channel: BroadcastChannel;
   private id: string;
   private connectedClients: Set<string> = new Set();
-  public state: any = {};
+  public state: Record<string, unknown> = {};
 
   constructor(namespace: string) {
     super();
@@ -29,7 +29,7 @@ class MockSocketServer extends EventEmitter {
     this.channel.close();
   }
 
-  public sendEmit(event: string, ...args: any[]) {
+  public sendEmit(event: string, ...args: unknown[]) {
     this.channel.postMessage({
       emitType: event,
       payload: args[0],
@@ -51,6 +51,7 @@ export function createMockSocket(url: string, namespace: string = 'classroom') {
 }
 
 export function usePrototypeSocket(namespace: string = 'classroom') {
+  void namespace;
   // A wrapper for React hooks, to be exported from apps
   // Not creating the hook here to avoid React deps in shared-utils,
   // returning the factory.

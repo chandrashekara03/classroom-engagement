@@ -70,7 +70,6 @@ const activityColors: Record<ActivityType, string> = {
 };
 
 export function ActivityCard({
-  id,
   title,
   type,
   description,
@@ -80,7 +79,6 @@ export function ActivityCard({
   createdAt,
   lastUsed,
   onStart,
-  onEdit,
   onConfigure,
   className
 }: ActivityCardProps) {

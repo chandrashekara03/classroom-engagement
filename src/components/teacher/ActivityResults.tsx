@@ -164,14 +164,14 @@ export default function ActivityResults({ activity, results, onClose, onExport }
       </div>
 
       {/* Tab Content */}
-      {activeTab === 'overview' && <OverviewTab activity={activity} results={results} />}
+      {activeTab === 'overview' && <OverviewTab results={results} />}
       {activeTab === 'details' && <DetailsTab results={results} />}
-      {activeTab === 'individual' && <IndividualTab results={results} />}
+      {activeTab === 'individual' && <IndividualTab />}
     </div>
   );
 }
 
-function OverviewTab({ activity, results }: { activity: ActivityResultsProps['activity']; results: ActivityResultData }) {
+function OverviewTab({ results }: { results: ActivityResultData }) {
   const stats = [
     {
       label: 'Total Responses',
@@ -323,7 +323,7 @@ function PollDetailsView({ results }: { results: PollResults }) {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {results.options.map((option, index) => (
+          {results.options.map((option) => (
             <div key={option.id} className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="font-medium">{option.text}</span>
@@ -414,7 +414,7 @@ function GenericDetailsView({ results }: { results: GenericResults }) {
   );
 }
 
-function IndividualTab({ results }: { results: ActivityResultData }) {
+function IndividualTab() {
   return (
     <Card>
       <CardHeader>

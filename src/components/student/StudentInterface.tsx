@@ -8,7 +8,6 @@ import {
   Wifi,
   BookOpen,
   Activity,
-  CheckCircle,
   AlertCircle
 } from 'lucide-react';
 import {
@@ -65,8 +64,8 @@ export function SessionJoin({ onJoinSession }: SessionJoinProps) {
       if (onJoinSession) {
         await onJoinSession(sessionCode.toUpperCase(), studentName.trim());
       }
-    } catch (err: any) {
-      setError(err.message || "Failed to join session. Please check the code.");
+    } catch (err: unknown) {
+      setError((err as Error).message || "Failed to join session. Please check the code.");
     } finally {
       setIsLoading(false);
     }

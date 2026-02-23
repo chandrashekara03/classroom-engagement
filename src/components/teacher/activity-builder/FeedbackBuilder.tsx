@@ -1,6 +1,11 @@
 "use client";
 
-export function FeedbackBuilder({ data, onChange }: { data: any, onChange: (d: any) => void }) {
+interface FeedbackData {
+  prompt?: string;
+  enableRating?: boolean;
+}
+
+export function FeedbackBuilder({ data, onChange }: { data: FeedbackData, onChange: (d: FeedbackData) => void }) {
   return (
     <div className="space-y-6">
       <div className="space-y-2">

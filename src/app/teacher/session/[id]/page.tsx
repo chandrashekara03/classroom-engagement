@@ -9,36 +9,38 @@ import { useSocket } from "@/hooks/useSocket";
 export default function SessionManager() {
   const { id } = useParams();
   const router = useRouter();
-  const [sessionData, setSessionData] = useState<any>(null);
-  const [templateData, setTemplateData] = useState<any>(null);
+  const [sessionData, setSessionData] = useState<Record<string, unknown> | null>(null);
+  const [templateData, setTemplateData] = useState<Record<string, unknown> | null>(null);
   
   const [status, setStatus] = useState<"LIVE" | "COMPLETED" | "SCHEDULED">("SCHEDULED");
-  const [responses, setResponses] = useState<any[]>([]);
+  const [responses, setResponses] = useState<Record<string, unknown>[]>([]);
   const [timer, setTimer] = useState(60);
-  const [participants, setParticipants] = useState<any[]>([]);
+  const [participants, setParticipants] = useState<Record<string, unknown>[]>([]);
 
   // Random Name Picker State
   const [pickedName, setPickedName] = useState<string | null>(null);
   const [isPicking, setIsPicking] = useState(false);
 
   // Group Matchmaker State
-  const [groups, setGroups] = useState<any[]>([]);
+  type GroupMember = { id: string; name: string; isPresent: boolean };
+  type SessionGroup = { id: string; name: string; members: GroupMember[] };
+  const [groups, setGroups] = useState<SessionGroup[]>([]);
   const [groupSize, setGroupSize] = useState<number>(3);
   const [showGroups, setShowGroups] = useState(false);
 
-  const { socket, isConnected, emitEvent } = useSocket(id as string, 'TEACHER');
+  const { emitEvent } = useSocket(id as string, 'TEACHER');
 
   useEffect(() => {
     // Load session and template configuration
     const sessions = JSON.parse(localStorage.getItem('classroom_sessions') || '[]');
-    const currentSession = sessions.find((s: any) => s.id === id);
+    const currentSession = sessions.find((s: Record<string, unknown>) => s.id === id);
     if (!currentSession) {
       router.push('/');
       return;
     }
     
     const templates = JSON.parse(localStorage.getItem('classroom_templates') || '[]');
-    const currentTemplate = templates.find((t: any) => t.id === currentSession.templateId);
+    const currentTemplate = templates.find((t: Record<string, unknown>) => t.id === currentSession.templateId);
     
     setSessionData(currentSession);
     setTemplateData(currentTemplate);
@@ -76,7 +78,7 @@ export default function SessionManager() {
     
     // Update local storage so if a student joins late, they know it's LIVE
     const sessions = JSON.parse(localStorage.getItem('classroom_sessions') || '[]');
-    const sIdx = sessions.findIndex((s: any) => s.id === id);
+    const sIdx = sessions.findIndex((s: Record<string, unknown>) => s.id === id);
     if (sIdx > -1) {
       sessions[sIdx].status = "LIVE";
       localStorage.setItem('classroom_sessions', JSON.stringify(sessions));
@@ -345,7 +347,7 @@ export default function SessionManager() {
                 {templateData?.type === 'POLL' && (
                   <div className="space-y-4">
                     <p className="font-semibold text-slate-700">Live Poll Results</p>
-                    {templateData.options.map((opt: any, i: number) => {
+                    {templateData.options?.map((opt: Record<string, unknown>, i: number) => {
                       const votes = Math.floor(Math.random() * responses.length);
                       const percentage = responses.length ? Math.round((votes / responses.length) * 100) : 0;
                       return (
@@ -369,7 +371,7 @@ export default function SessionManager() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {responses.map((r, i) => (
                         <div key={i} className="p-4 bg-amber-50 rounded-xl border border-amber-100 shadow-sm">
-                          <p className="italic text-slate-800">"{r.data || 'No response recorded'}"</p>
+                          <p className="italic text-slate-800">&ldquo;{r.data || 'No response recorded'}&rdquo;</p>
                           <p className="text-xs text-amber-600 mt-2 font-medium">- Anonymous</p>
                         </div>
                       ))}
@@ -396,7 +398,7 @@ export default function SessionManager() {
               {participants.length === 0 && (
                 <div className="text-slate-500 italic py-4 text-center">No participants joined yet. Share the code {sessionData?.code}</div>
               )}
-              {participants.map((p, idx) => {
+              {participants.map((p) => {
                 const hasResponded = responses.some(r => r.participantId === p.id);
                 return (
                   <div key={p.id} className="flex items-center justify-between text-sm py-3 border-b border-slate-100">

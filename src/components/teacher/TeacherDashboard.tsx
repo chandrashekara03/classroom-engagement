@@ -2,16 +2,11 @@
 
 import { useState } from 'react';
 import {
-  LayoutDashboard,
   Activity,
-  Users,
   BarChart3,
-  Settings,
-  BookOpen,
   Play,
   Pause,
   Square,
-  Timer,
   UserPlus,
   Shuffle,
   FileText,
@@ -90,16 +85,16 @@ const mockLeaderboard = [
 ];
 
 export function TeacherDashboard({ className }: TeacherDashboardProps) {
-  const [currentSession, setCurrentSession] = useState({
+  const [currentSession] = useState(() => ({
     id: 'session-1',
     code: 'ABC123',
     title: 'Advanced Mathematics - Unit 3',
     status: 'LIVE' as const,
     startedAt: new Date(Date.now() - 1800000), // 30 minutes ago
     participantCount: 4
-  });
+  }));
   
-  const [sessionTimer, setSessionTimer] = useState(1200); // 20 minutes
+  const [sessionTimer] = useState(1200); // 20 minutes
   const [isSessionActive, setIsSessionActive] = useState(true);
 
   const handleStartActivity = (activityId: string) => {
@@ -124,7 +119,7 @@ export function TeacherDashboard({ className }: TeacherDashboardProps) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className={`space-y-6 ${className || ''}`}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

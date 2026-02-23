@@ -143,6 +143,7 @@ export function GroupDisplay({
                       className="flex items-center space-x-2 text-sm"
                     >
                       {member.avatar ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
                         <img
                           src={member.avatar}
                           alt={member.name}
