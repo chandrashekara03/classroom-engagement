@@ -1,5 +1,7 @@
 'use client';
 
+import type { SessionStatus } from '@classroom/shared-utils';
+
 import { useState } from 'react';
 import { 
   LogIn, 
@@ -31,7 +33,7 @@ interface JoinedSessionProps {
     title: string;
     teacher: string;
     participantCount: number;
-    status: 'WAITING' | 'LIVE' | 'PAUSED' | 'COMPLETED';
+    status: SessionStatus;
   };
   currentActivity?: {
     id: string;

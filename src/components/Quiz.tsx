@@ -23,6 +23,7 @@ export default function Quiz({ sessionId, isTeacher }: QuizProps) {
   const [answers, setAnswers] = useState<{ [key: string]: number }>({});
 
   useEffect(() => {
+    if (!database) return;
     const quizRef = ref(database, `sessions/${sessionId}/quiz`);
     onValue(quizRef, (snapshot) => {
       const data = snapshot.val();
@@ -35,7 +36,7 @@ export default function Quiz({ sessionId, isTeacher }: QuizProps) {
   }, [sessionId]);
 
   const submitAnswer = () => {
-    if (selectedAnswer !== null) {
+    if (selectedAnswer !== null && database) {
       const answerRef = ref(database, `sessions/${sessionId}/quiz/answers/${Date.now()}`);
       set(answerRef, { answer: selectedAnswer, studentId: 'student1' }); // TODO: Use actual student ID
     }

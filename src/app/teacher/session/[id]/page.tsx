@@ -9,13 +9,13 @@ import { useSocket } from "@/hooks/useSocket";
 export default function SessionManager() {
   const { id } = useParams();
   const router = useRouter();
-  const [sessionData, setSessionData] = useState<Record<string, unknown> | null>(null);
-  const [templateData, setTemplateData] = useState<Record<string, unknown> | null>(null);
+  const [sessionData, setSessionData] = useState<any | null>(null);
+  const [templateData, setTemplateData] = useState<any | null>(null);
   
   const [status, setStatus] = useState<"LIVE" | "COMPLETED" | "SCHEDULED">("SCHEDULED");
-  const [responses, setResponses] = useState<Record<string, unknown>[]>([]);
+  const [responses, setResponses] = useState<any[]>([]);
   const [timer, setTimer] = useState(60);
-  const [participants, setParticipants] = useState<Record<string, unknown>[]>([]);
+  const [participants, setParticipants] = useState<{ id: string; name: string; [key: string]: any }[]>([]);
 
   // Random Name Picker State
   const [pickedName, setPickedName] = useState<string | null>(null);
@@ -347,7 +347,7 @@ export default function SessionManager() {
                 {templateData?.type === 'POLL' && (
                   <div className="space-y-4">
                     <p className="font-semibold text-slate-700">Live Poll Results</p>
-                    {templateData.options?.map((opt: Record<string, unknown>, i: number) => {
+                    {templateData.options?.map((opt: any, i: number) => {
                       const votes = Math.floor(Math.random() * responses.length);
                       const percentage = responses.length ? Math.round((votes / responses.length) * 100) : 0;
                       return (

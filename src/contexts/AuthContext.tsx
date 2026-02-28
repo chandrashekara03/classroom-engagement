@@ -38,9 +38,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    // Check if we have valid firebase config or just dummy variables
-    if (auth.app.options.apiKey?.startsWith("dummy-api-key")) {
-      console.warn("Firebase using mock configuration. Injecting mock user.");
+    if (!auth || auth.app.options.apiKey?.startsWith("dummy-api-key")) {
+      console.warn("Firebase using mock configuration or not initialized. Injecting mock user.");
       const mockSession = localStorage.getItem('mock_faculty_auth');
       if (mockSession === 'true') {
         // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -127,11 +126,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     
     try {
-      await firebaseSignOut(auth);
+      if (auth) {
+        await firebaseSignOut(auth);
+      }
+<<<<<<< Updated upstream
       setUser(null);
       setUserType(null);
       setTeacherData(null);
       setStudentData(null);
+=======
+>>>>>>> Stashed changes
       router.push('/teacher/login');
     } catch (error) {
       console.error("Failed to log out", error);

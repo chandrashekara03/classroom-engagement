@@ -8,8 +8,8 @@ import { useRouter } from "next/navigation";
 
 export default function SessionsPage() {
   const router = useRouter();
-  const [sessions, setSessions] = useState<Record<string, unknown>[]>([]);
-  const [templates, setTemplates] = useState<Record<string, unknown>[]>([]);
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [templates, setTemplates] = useState<any[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
   useEffect(() => {

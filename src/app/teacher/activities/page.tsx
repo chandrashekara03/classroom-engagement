@@ -6,9 +6,18 @@ import { LucidePlus, LucideSearch, LucidePlay, LucideEdit2, LucideTrash2, Lucide
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+interface ActivityTemplate {
+  id: string;
+  type: string;
+  title: string;
+  createdAt: string;
+  questions?: any[];
+  [key: string]: any;
+}
+
 export default function ActivitiesPage() {
   const router = useRouter();
-  const [templates, setTemplates] = useState<Record<string, unknown>[]>([]);
+  const [templates, setTemplates] = useState<ActivityTemplate[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState("ALL");
 
