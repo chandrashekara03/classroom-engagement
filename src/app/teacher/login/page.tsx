@@ -2,15 +2,17 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, Input, Button } from '@classroom/ui-components';
-import { Activity, Lock, Mail, AlertCircle } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, Input, Button } from '@classroom/ui-components';
+import { Activity, Lock, Mail, AlertCircle, LucideUserPlus, LucideArrowRight } from 'lucide-react';
+import Link from 'next/link';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isSignUp, setIsSignUp] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
@@ -25,11 +27,11 @@ export default function LoginPage() {
     if (isMocked) {
       // Mock login for faculty testing without Firebase API keys
       setTimeout(() => {
-        if (email.includes('@christuniversity.in') || email === 'admin') {
+        if (email.includes('christuniversity.in') || email === 'admin') {
           localStorage.setItem('mock_faculty_auth', 'true');
           window.location.href = '/teacher';
         } else {
-          setError('Please use a valid @christuniversity.in faculty email or "admin".');
+          setError('Please use a valid christuniversity.in faculty email or "admin".');
           setIsLoading(false);
         }
       }, 800);
@@ -38,10 +40,15 @@ export default function LoginPage() {
 
     try {
       if (!auth) throw new Error("Auth system unavailable.");
-      await signInWithEmailAndPassword(auth, email, password);
+      if (isSignUp) {
+        await createUserWithEmailAndPassword(auth, email, password);
+      } else {
+        await signInWithEmailAndPassword(auth, email, password);
+      }
       router.push('/teacher');
-    } catch {
-      setError('Invalid email or password.');
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Authentication failed. Please check your credentials.');
       setIsLoading(false);
     }
   };
@@ -61,12 +68,17 @@ export default function LoginPage() {
 
       <Card className="w-full max-w-sm shadow-sm border-slate-200">
         <CardContent className="p-6">
+          <CardHeader className="text-center pb-6 px-0 pt-0">
+            <CardTitle className="text-xl">
+              {isSignUp ? 'Create Faculty Account' : 'Sign In'}
+            </CardTitle>
+          </CardHeader>
           <form onSubmit={handleLogin} className="space-y-4">
             
             {error && (
               <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg flex items-center gap-2 font-medium border border-red-100">
                 <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>{error}</span>
+                <span className="truncate">{error}</span>
               </div>
             )}
             
@@ -110,23 +122,60 @@ export default function LoginPage() {
               {isLoading ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                  Authenticating...
+                  Processing...
                 </>
               ) : (
-                <>
-                  Sign In
-                </>
+                <div className="flex items-center justify-center gap-2">
+                  {isSignUp ? <LucideUserPlus size={18} /> : null}
+                  {isSignUp ? 'Sign Up' : 'Sign In'}
+                  <LucideArrowRight size={18} />
+                </div>
               )}
             </Button>
           </form>
+
+          <div className="relative my-6 text-center">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-slate-200" />
+            </div>
+            <span className="relative px-2 bg-white text-xs text-slate-400 font-medium">FOR LOCAL TESTING</span>
+          </div>
+
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => {
+              localStorage.setItem('mock_faculty_auth', 'true');
+              window.location.href = '/teacher';
+            }}
+            className="w-full text-slate-500 hover:bg-slate-50 text-xs font-semibold py-4"
+          >
+            Bypass Login (Local Admin)
+          </Button>
+
+          <div className="mt-6 text-center">
+            <button
+              onClick={() => setIsSignUp(!isSignUp)}
+              className="text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
+            >
+              {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Create one"}
+            </button>
+          </div>
         </CardContent>
       </Card>
       
-      {isMocked && (
-        <p className="text-xs text-slate-400 mt-8 text-center max-w-xs">
-          (Development Mode: Sign in with any *christuniversity.in* email or &apos;admin&apos; to bypass Firebase)
-        </p>
-      )}
+      <div className="mt-8 text-center space-y-4">
+        {isMocked && (
+          <p className="text-xs text-slate-400 max-w-xs mx-auto">
+            (Development Mode: Sign in with any *christuniversity.in* email or &apos;admin&apos; to bypass Firebase)
+          </p>
+        )}
+        <div className="pt-4 border-t border-slate-100">
+           <Link href="/student/login" className="text-sm text-slate-500 hover:text-slate-900 transition-colors">
+             Are you a student? Use the Student Portal →
+           </Link>
+        </div>
+      </div>
 
     </div>
   );

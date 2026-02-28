@@ -1,7 +1,7 @@
 ﻿// Import the functions you need from the SDKs you need
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getDatabase } from 'firebase/database';
+import { getAuth, Auth } from 'firebase/auth';
+import { getDatabase, Database } from 'firebase/database';
 import { getAnalytics, Analytics } from 'firebase/analytics';
 
 // Your web app's Firebase configuration
@@ -31,7 +31,10 @@ export const auth: Auth | null = app ? getAuth(app) : null;
 // Initialize Realtime Database and get a reference to the service
 export const database: Database | null = app ? getDatabase(app) : null;
 
-// Initialize Analytics (only on client side)
-export const analytics = (app && typeof window !== 'undefined') ? getAnalytics(app) : null as Analytics | null;
+// Initialize Analytics (only on client side and with valid key)
+const isDummyKey = firebaseConfig.apiKey.startsWith('dummy-api-key');
+export const analytics = (app && typeof window !== 'undefined' && !isDummyKey) 
+  ? getAnalytics(app) 
+  : null;
 
 export { app };
