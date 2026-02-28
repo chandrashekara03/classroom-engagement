@@ -24,6 +24,11 @@ export default function StudentLoginPage() {
     setError('');
 
     try {
+      if (!auth) {
+        setError('Firebase is not configured. Please contact your administrator.');
+        setLoading(false);
+        return;
+      }
       if (isSignUp) {
         await createUserWithEmailAndPassword(auth, email, password);
       } else {
@@ -39,7 +44,7 @@ export default function StudentLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-[#e8ecf4] to-[#d4dae8] flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-slate-900 mb-2">Student Portal</h1>
@@ -95,7 +100,8 @@ export default function StudentLoginPage() {
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 font-medium"
+                style={{ backgroundColor: '#1f346b' }}
+                className="w-full hover:opacity-90 text-white py-3 font-medium"
               >
                 {loading ? (
                   'Please wait...'
@@ -112,13 +118,14 @@ export default function StudentLoginPage() {
             <div className="mt-6 text-center space-y-2">
               <button
                 onClick={() => setIsSignUp(!isSignUp)}
-                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                className="text-sm hover:opacity-80 font-medium"
+                style={{ color: '#1f346b' }}
               >
                 {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
               </button>
 
               <div className="text-xs text-slate-500">
-                <Link href="/student/join" className="text-blue-600 hover:text-blue-700">
+                <Link href="/student/join" style={{ color: '#1f346b' }} className="hover:opacity-80">
                   Join a session with code →
                 </Link>
               </div>

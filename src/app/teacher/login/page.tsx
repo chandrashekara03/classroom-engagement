@@ -6,14 +6,15 @@ import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, Input, Button } from '@classroom/ui-components';
-import { Activity, Lock, Mail, AlertCircle } from 'lucide-react';
+import { Lock, Mail, AlertCircle } from 'lucide-react';
+import Image from 'next/image';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const router = useRouter();
   const { isMocked } = useAuth();
 
@@ -37,6 +38,11 @@ export default function LoginPage() {
     }
 
     try {
+      if (!auth) {
+        setError('Firebase is not configured. Please use mock login or configure Firebase.');
+        setIsLoading(false);
+        return;
+      }
       await signInWithEmailAndPassword(auth, email, password);
       router.push('/teacher');
     } catch {
@@ -47,10 +53,10 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-slate-900">
-      
+
       <div className="text-center space-y-4 mb-8">
-        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
-          <Activity className="w-8 h-8 text-blue-600" />
+        <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto">
+          <Image src="/logo.png" alt="CHRIST University" width={64} height={64} className="rounded-full" />
         </div>
         <div>
           <h1 className="text-2xl font-bold text-slate-900">CHRIST Classroom Engagement</h1>
@@ -61,14 +67,14 @@ export default function LoginPage() {
       <Card className="w-full max-w-sm shadow-sm border-slate-200">
         <CardContent className="p-6">
           <form onSubmit={handleLogin} className="space-y-4">
-            
+
             {error && (
               <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg flex items-center gap-2 font-medium border border-red-100">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{error}</span>
               </div>
             )}
-            
+
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">Institutional Email</label>
               <div className="relative">
@@ -83,7 +89,7 @@ export default function LoginPage() {
                 />
               </div>
             </div>
-            
+
             <div className="space-y-2 pb-2">
               <div className="flex items-center justify-between">
                 <label className="text-sm font-medium text-slate-700">Password</label>
@@ -100,10 +106,11 @@ export default function LoginPage() {
                 />
               </div>
             </div>
-            
-            <Button 
-              type="submit" 
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-sm transition-all" 
+
+            <Button
+              type="submit"
+              style={{ backgroundColor: '#1f346b' }}
+              className="w-full hover:opacity-90 text-white font-medium shadow-sm transition-all"
               disabled={isLoading}
             >
               {isLoading ? (
@@ -120,7 +127,7 @@ export default function LoginPage() {
           </form>
         </CardContent>
       </Card>
-      
+
       {isMocked && (
         <p className="text-xs text-slate-400 mt-8 text-center max-w-xs">
           (Development Mode: Sign in with any *christuniversity.in* email or &apos;admin&apos; to bypass Firebase)

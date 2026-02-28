@@ -55,7 +55,7 @@ export function TeacherDashboard() {
             title: "Sample Test Class Theme",
             type: "QUIZ",
             questions: [
-                { id: "q1", text: "Is this working?", options: [{id: "opt1", text: "Yes"}, {id: "opt2", text: "No"}], correctOption: "opt1", points: 1 }
+              { id: "q1", text: "Is this working?", options: [{ id: "opt1", text: "Yes" }, { id: "opt2", text: "No" }], correctOption: "opt1", points: 1 }
             ]
           };
           savedTemplates.push(sampleTemplate);
@@ -109,9 +109,10 @@ export function TeacherDashboard() {
           <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
           <p className="text-slate-500">Welcome back, Professor.</p>
         </div>
-        <Link 
+        <Link
           href="/teacher/create"
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors font-medium shadow-sm"
+          style={{ backgroundColor: '#1f346b' }}
+          className="hover:opacity-90 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all font-medium shadow-sm"
         >
           <LucidePlus size={20} />
           Create New Activity
@@ -119,7 +120,7 @@ export function TeacherDashboard() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="Total Participation" value="94%" icon={<LucideUsers className="text-blue-600" />} />
+        <StatCard title="Total Participation" value="94%" icon={<LucideUsers style={{ color: '#1f346b' }} />} />
         <StatCard title="Active Sessions" value="1" icon={<LucideActivity className="text-emerald-600" />} />
         <StatCard title="Avg. Score" value="8.4" icon={<LucideBarChart2 className="text-amber-600" />} />
         <StatCard title="Templates Created" value={templates.length.toString()} icon={<LucideLayoutDashboard className="text-slate-600" />} />
@@ -134,16 +135,16 @@ export function TeacherDashboard() {
             <CardContent className="pt-6">
               <div className="space-y-4">
                 {activeSessions.map((session) => (
-                  <div key={session.id} className="flex items-center justify-between p-4 rounded-xl border border-slate-200 bg-white hover:border-blue-300 transition-colors shadow-sm">
+                  <div key={session.id} className="flex items-center justify-between p-4 rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition-colors shadow-sm">
                     <div className="space-y-1">
                       <p className="font-semibold text-slate-900">{session.title}</p>
                       <div className="flex items-center gap-3 text-sm text-slate-500 font-medium">
                         <SessionStatusIndicator status={session.status} />
-                        <span className="flex items-center gap-1"><LucideUsers size={14}/> {Object.keys(session.participants || {}).length} participants</span>
+                        <span className="flex items-center gap-1"><LucideUsers size={14} /> {Object.keys(session.participants || {}).length} participants</span>
                         <span className="px-2 py-0.5 bg-slate-100 rounded text-slate-600">Code: {session.code}</span>
                       </div>
                     </div>
-                    <Link href={`/teacher/session/${session.id}`} className="text-blue-600 bg-blue-50 px-4 py-2 rounded-lg hover:bg-blue-100 font-semibold transition-colors">
+                    <Link href={`/teacher/session/${session.id}`} style={{ color: '#1f346b', backgroundColor: '#e8ecf4' }} className="px-4 py-2 rounded-lg hover:opacity-80 font-semibold transition-all">
                       Manage Live
                     </Link>
                   </div>
@@ -176,7 +177,7 @@ export function TeacherDashboard() {
                           {t.type === 'QUIZ' ? `${t.questions?.length || 0} Questions` : t.type === 'POLL' ? `${t.options?.length || 0} Options` : 'Custom Activity'}
                         </p>
                       </div>
-                      <button 
+                      <button
                         onClick={() => handleLaunch(t.id)}
                         className="mt-4 w-full bg-slate-900 hover:bg-slate-800 text-white font-medium py-2 rounded-lg flex items-center justify-center gap-2 transition-colors opacity-90 group-hover:opacity-100 shadow-sm"
                       >
@@ -227,9 +228,9 @@ function StatCard({ title, value, icon }: { title: string; value: string; icon: 
 
 function ActionButton({ label, href }: { label: string, href: string }) {
   return (
-    <Link href={href} className="w-full px-4 py-3 rounded-xl border border-slate-200 hover:border-blue-300 hover:bg-blue-50 transition-all font-medium flex items-center justify-between group shadow-sm bg-white">
-      <span className="text-slate-700 group-hover:text-blue-700">{label}</span>
-      <LucidePlus size={18} className="text-slate-400 group-hover:text-blue-600" />
+    <Link href={href} className="w-full px-4 py-3 rounded-xl border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all font-medium flex items-center justify-between group shadow-sm bg-white">
+      <span className="text-slate-700 group-hover:text-slate-900">{label}</span>
+      <LucidePlus size={18} className="text-slate-400 group-hover:text-slate-700" />
     </Link>
   );
 }

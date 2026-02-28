@@ -19,7 +19,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
-  logout: async () => {},
+  logout: async () => { },
   isMocked: false,
   userType: null,
   teacherData: null,
@@ -38,6 +38,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
+    // If auth is null, Firebase failed to initialize
+    if (!auth) {
+      setLoading(false);
+      return;
+    }
+
     // Check if we have valid firebase config or just dummy variables
     if (auth.app.options.apiKey?.startsWith("dummy-api-key")) {
       console.warn("Firebase using mock configuration. Injecting mock user.");
@@ -60,14 +66,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth!, async (firebaseUser) => {
       if (firebaseUser) {
         setUser(firebaseUser);
-        
+
         // Determine user type based on email domain
         const isTeacher = firebaseUser.email?.endsWith('@christuniversity.in') || false;
         setUserType(isTeacher ? 'teacher' : 'student');
-        
+
         // Check and create/update user in database
         if (isTeacher) {
           let teacher = await dbService.getTeacher(firebaseUser.uid);
@@ -125,7 +131,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       router.push('/teacher/login');
       return;
     }
-    
+
+    if (!auth) return;
+
     try {
       await firebaseSignOut(auth);
       setUser(null);

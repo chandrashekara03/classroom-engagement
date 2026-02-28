@@ -1,112 +1,210 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   LayoutDashboard,
   Activity,
   Users,
-  BarChart3,
-  Settings,
   BookOpen,
+  Settings,
   LogOut,
   Menu,
-  X
+  X,
+  ChevronDown,
+  User,
+  Bell
 } from 'lucide-react';
-import { Button } from '@classroom/ui-components';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-
-interface SidebarProps {
-  className?: string;
-}
 
 const navigationItems = [
   {
     name: 'Dashboard',
     href: '/teacher',
     icon: LayoutDashboard,
-    current: true
   },
   {
     name: 'Activities',
     href: '/teacher/activities',
     icon: Activity,
-    current: false
   },
   {
     name: 'Sessions',
     href: '/teacher/sessions',
     icon: BookOpen,
-    current: false
   },
   {
     name: 'Participants',
     href: '/teacher/participants',
     icon: Users,
-    current: false
-  },
-  {
-    name: 'Analytics',
-    href: '/teacher/analytics',
-    icon: BarChart3,
-    current: false
   },
   {
     name: 'Settings',
     href: '/teacher/settings',
     icon: Settings,
-    current: false
   }
 ];
 
-export function Sidebar({ className }: SidebarProps) {
+// Theme color
+const BRAND = '#1f346b';
+const BRAND_LIGHT = '#e8ecf4'; // light tint for backgrounds
+const BRAND_HOVER = '#2a4590'; // slightly lighter for hover
+
+export function Sidebar() {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isAccountOpen, setIsAccountOpen] = useState(false);
+  const accountRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
   const { user, logout } = useAuth();
 
+  // Close account dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (accountRef.current && !accountRef.current.contains(event.target as Node)) {
+        setIsAccountOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const userInitial = user?.displayName ? user.displayName.charAt(0).toUpperCase() : 'F';
+
   return (
     <>
-      {/* Mobile menu button */}
-      <div className="lg:hidden fixed top-4 left-4 z-50">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => setIsMobileOpen(!isMobileOpen)}
-        >
-          {isMobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-        </Button>
-      </div>
+      {/* Top Navbar */}
+      <nav className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-slate-200 shadow-sm">
+        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6">
+          <div className="flex items-center justify-between h-16">
 
-      {/* Mobile backdrop */}
-      {isMobileOpen && (
-        <div 
-          className="lg:hidden fixed inset-0 bg-slate-600 bg-opacity-75 z-40"
-          onClick={() => setIsMobileOpen(false)}
-        />
-      )}
-
-      {/* Sidebar */}
-      <div className={`${className || ''}
-        fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-200 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0
-        ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}
-      `}>
-        <div className="flex flex-col h-full">
-          {/* Logo/Header */}
-          <div className="flex items-center h-16 px-6 border-b border-slate-200">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <Activity className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h1 className="text-lg font-semibold text-slate-900 leading-tight">CHRIST Classroom Engagement</h1>
-                <p className="text-xs text-slate-500 font-medium">Faculty Dashboard</p>
+            {/* Logo */}
+            <div className="flex items-center space-x-3 shrink-0">
+              <Image
+                src="/logo.png"
+                alt="CHRIST University Logo"
+                width={40}
+                height={40}
+                className="rounded-lg"
+              />
+              <div className="hidden sm:block">
+                <h1 className="text-base font-semibold leading-tight" style={{ color: BRAND }}>CHRIST Classroom</h1>
+                <p className="text-[11px] text-slate-500 font-medium -mt-0.5">Faculty Dashboard</p>
               </div>
             </div>
-          </div>
 
-          {/* Navigation */}
-          <nav className="flex-1 px-4 py-6 space-y-2">
+            {/* Desktop Nav Links */}
+            <div className="hidden lg:flex items-center space-x-1">
+              {navigationItems.map((item) => {
+                const Icon = item.icon;
+                const isCurrent = pathname === item.href;
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    style={isCurrent ? { backgroundColor: BRAND_LIGHT, color: BRAND } : undefined}
+                    className={`
+                      flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors
+                      ${!isCurrent ? 'text-slate-600 hover:bg-slate-100 hover:text-slate-900' : ''}
+                    `}
+                  >
+                    <Icon
+                      className="mr-2 h-4 w-4"
+                      style={{ color: isCurrent ? BRAND : undefined }}
+                    />
+                    {item.name}
+                  </Link>
+                );
+              })}
+            </div>
+
+            {/* Right side: Notifications + Account */}
+            <div className="flex items-center gap-2">
+              {/* Notification Bell */}
+              <button
+                className="relative p-2 rounded-lg hover:bg-slate-100 transition-colors"
+                aria-label="Notifications"
+              >
+                <Bell className="h-5 w-5 text-slate-600" />
+                <span
+                  className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full"
+                  style={{ backgroundColor: '#ef4444' }}
+                />
+              </button>
+
+              {/* Account Dropdown */}
+              <div className="relative" ref={accountRef}>
+                <button
+                  onClick={() => setIsAccountOpen(!isAccountOpen)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors"
+                >
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center"
+                    style={{ backgroundColor: BRAND_LIGHT, border: `1px solid ${BRAND}33` }}
+                  >
+                    <span className="text-sm font-bold" style={{ color: BRAND }}>{userInitial}</span>
+                  </div>
+                  <div className="hidden sm:block text-left">
+                    <p className="text-sm font-medium text-slate-900 leading-tight truncate max-w-[120px]">
+                      {user?.displayName || 'Faculty'}
+                    </p>
+                    <p className="text-[11px] text-slate-500 truncate max-w-[120px]">
+                      {user?.email || 'faculty@christuniversity.in'}
+                    </p>
+                  </div>
+                  <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${isAccountOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {/* Dropdown Menu */}
+                {isAccountOpen && (
+                  <div className="absolute right-0 top-full mt-1 w-56 bg-white border border-slate-200 rounded-xl shadow-lg py-1 z-50">
+                    <div className="px-4 py-3 border-b border-slate-100">
+                      <p className="text-sm font-semibold text-slate-900 truncate">
+                        {user?.displayName || 'Faculty Member'}
+                      </p>
+                      <p className="text-xs text-slate-500 truncate">
+                        {user?.email || 'faculty@christuniversity.in'}
+                      </p>
+                    </div>
+                    <Link
+                      href="/teacher/settings"
+                      onClick={() => setIsAccountOpen(false)}
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                    >
+                      <User className="h-4 w-4 text-slate-400" />
+                      Account Settings
+                    </Link>
+                    <div className="border-t border-slate-100">
+                      <button
+                        onClick={() => {
+                          setIsAccountOpen(false);
+                          logout();
+                        }}
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        Sign Out
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Mobile menu button */}
+              <button
+                className="lg:hidden p-2 rounded-lg hover:bg-slate-100 transition-colors"
+                onClick={() => setIsMobileOpen(!isMobileOpen)}
+              >
+                {isMobileOpen ? <X className="h-5 w-5 text-slate-600" /> : <Menu className="h-5 w-5 text-slate-600" />}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile nav menu */}
+        {isMobileOpen && (
+          <div className="lg:hidden border-t border-slate-100 bg-white px-4 py-3 space-y-1 shadow-lg">
             {navigationItems.map((item) => {
               const Icon = item.icon;
               const isCurrent = pathname === item.href;
@@ -115,51 +213,31 @@ export function Sidebar({ className }: SidebarProps) {
                   key={item.name}
                   href={item.href}
                   onClick={() => setIsMobileOpen(false)}
+                  style={isCurrent ? { backgroundColor: BRAND_LIGHT, color: BRAND } : undefined}
                   className={`
-                    flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors
-                    ${isCurrent
-                      ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                      : 'text-slate-700 hover:bg-slate-100'
-                    }
+                    flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors
+                    ${!isCurrent ? 'text-slate-600 hover:bg-slate-100' : ''}
                   `}
                 >
-                  <Icon className={`mr-3 h-4 w-4 ${isCurrent ? 'text-blue-700' : 'text-slate-400'}`} />
+                  <Icon
+                    className="mr-3 h-4 w-4"
+                    style={{ color: isCurrent ? BRAND : undefined }}
+                  />
                   {item.name}
                 </Link>
               );
             })}
-          </nav>
-
-          {/* User section */}
-          <div className="px-4 py-4 border-t border-slate-200">
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center border border-slate-200">
-                <span className="text-sm font-bold text-slate-700">
-                  {user?.displayName ? user.displayName.charAt(0).toUpperCase() : 'F'}
-                </span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-900 truncate">
-                  {user?.displayName || 'Faculty Member'}
-                </p>
-                <p className="text-xs text-slate-500 truncate">
-                  {user?.email || 'faculty@christuniversity.in'}
-                </p>
-              </div>
-            </div>
-            
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={logout}
-              className="w-full justify-start text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors"
-            >
-              <LogOut className="mr-3 h-4 w-4" />
-              Sign Out
-            </Button>
           </div>
-        </div>
-      </div>
+        )}
+      </nav>
+
+      {/* Mobile backdrop */}
+      {isMobileOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-slate-600/50 z-30"
+          onClick={() => setIsMobileOpen(false)}
+        />
+      )}
     </>
   );
 }
