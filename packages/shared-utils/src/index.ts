@@ -32,6 +32,14 @@ export interface ActivityConfig {
   anonymousParticipation?: boolean;
 }
 
+// 3D Model Activity Types
+export interface PlanetActivitySettings {
+  time_limit: number;
+  model_url: string; // The path to the planet .glb file
+  planet_name: string;
+  instructions: string;
+}
+
 // Quiz Activity Types
 export interface QuizQuestion {
   id: string;

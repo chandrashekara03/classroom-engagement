@@ -18,35 +18,10 @@ export default function Home() {
 
 export function TeacherDashboard() {
   const router = useRouter();
-<<<<<<< Updated upstream
   const { user, teacherData } = useAuth();
   const [templates, setTemplates] = useState<any[]>([]);
   const [activeSessions, setActiveSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
-=======
-  interface StoredTemplate {
-    id: string;
-    title?: string;
-    type?: string;
-    questions?: Array<{ id: string; text?: string; options?: Array<{ id: string; text: string }>; correctOption?: string; points?: number }>;
-    options?: any[];
-  }
-  interface StoredSession {
-    id: string;
-    code: string;
-    title?: string;
-    templateId?: string;
-    status?: string;
-    createdAt?: string;
-  }
-  interface ActiveSessionSummary {
-    id: string;
-    name: string;
-    status?: string;
-    participants: number;
-    code: string;
-  }
->>>>>>> Stashed changes
 
   useEffect(() => {
     if (!user || !teacherData) return;
@@ -164,13 +139,8 @@ export function TeacherDashboard() {
                     <div className="space-y-1">
                       <p className="font-semibold text-slate-900">{session.title}</p>
                       <div className="flex items-center gap-3 text-sm text-slate-500 font-medium">
-<<<<<<< Updated upstream
                         <SessionStatusIndicator status={session.status} />
                         <span className="flex items-center gap-1"><LucideUsers size={14}/> {Object.keys(session.participants || {}).length} participants</span>
-=======
-                        <SessionStatusIndicator status={(session.status as SessionStatus) || 'SCHEDULED'} />
-                        <span className="flex items-center gap-1"><LucideUsers size={14}/> {session.participants} participants</span>
->>>>>>> Stashed changes
                         <span className="px-2 py-0.5 bg-slate-100 rounded text-slate-600">Code: {session.code}</span>
                       </div>
                     </div>

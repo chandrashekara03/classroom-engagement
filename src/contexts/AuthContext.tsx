@@ -38,22 +38,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
+    // Check for local bypass first (useful for testing when Firebase Auth isn't yet configured)
+    const mockSession = typeof window !== 'undefined' ? localStorage.getItem('mock_faculty_auth') : null;
+    const isActuallyMocked = !auth || auth.app.options.apiKey?.startsWith("dummy-api-key") || mockSession === 'true';
+
+    if (isActuallyMocked && mockSession === 'true') {
+      console.warn("Auth bypass active. Using mock user.");
+      setUser({ uid: 'admin-001', email: 'professor@christuniversity.in', displayName: 'Mock Faculty' } as User);
+      setUserType('teacher');
+      setTeacherData({
+        uid: 'admin-001',
+        email: 'professor@christuniversity.in',
+        displayName: 'Mock Faculty',
+        department: 'Computer Science',
+        createdAt: new Date().toISOString(),
+        lastLoginAt: new Date().toISOString()
+      });
+      setIsMocked(true);
+      setLoading(false);
+      return;
+    }
+
     if (!auth || auth.app.options.apiKey?.startsWith("dummy-api-key")) {
-      console.warn("Firebase using mock configuration or not initialized. Injecting mock user.");
-      const mockSession = localStorage.getItem('mock_faculty_auth');
-      if (mockSession === 'true') {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setUser({ uid: 'admin-001', email: 'professor@christuniversity.in', displayName: 'Mock Faculty' } as User);
-        setUserType('teacher');
-        setTeacherData({
-          uid: 'admin-001',
-          email: 'professor@christuniversity.in',
-          displayName: 'Mock Faculty',
-          department: 'Computer Science',
-          createdAt: new Date().toISOString(),
-          lastLoginAt: new Date().toISOString()
-        });
-      }
       setIsMocked(true);
       setLoading(false);
       return;
@@ -63,8 +69,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (firebaseUser) {
         setUser(firebaseUser);
         
-        // Determine user type based on email domain
-        const isTeacher = firebaseUser.email?.endsWith('@christuniversity.in') || false;
+        // Determine user type based on email domain (supports subdomains like @bsccmh.christuniversity.in)
+        const isTeacher = firebaseUser.email?.endsWith('christuniversity.in') || false;
         setUserType(isTeacher ? 'teacher' : 'student');
         
         // Check and create/update user in database
@@ -129,13 +135,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (auth) {
         await firebaseSignOut(auth);
       }
-<<<<<<< Updated upstream
       setUser(null);
       setUserType(null);
       setTeacherData(null);
       setStudentData(null);
-=======
->>>>>>> Stashed changes
       router.push('/teacher/login');
     } catch (error) {
       console.error("Failed to log out", error);
