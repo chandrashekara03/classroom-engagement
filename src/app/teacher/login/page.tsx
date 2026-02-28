@@ -37,6 +37,7 @@ export default function LoginPage() {
     }
 
     try {
+      if (!auth) throw new Error("Auth system unavailable.");
       await signInWithEmailAndPassword(auth, email, password);
       router.push('/teacher');
     } catch {

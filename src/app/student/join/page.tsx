@@ -24,7 +24,7 @@ interface SessionState {
     title: string;
     teacher: string;
     participantCount: number;
-    status: 'WAITING' | 'LIVE' | 'PAUSED' | 'COMPLETED';
+    status: SessionStatus;
   };
   currentActivity?: Activity;
   submittedResponses: Set<string>;
@@ -180,7 +180,7 @@ export default function StudentPage() {
         code: "000000",
         templateId: "template-sample",
         title: "Sample Session",
-        status: "WAITING",
+        status: "SCHEDULED",
         createdAt: new Date().toISOString()
       };
     }
@@ -240,7 +240,7 @@ export default function StudentPage() {
         ...prev,
         submittedResponses: new Set([...prev.submittedResponses, currentId]),
         currentActivity: undefined,
-        sessionInfo: prev.sessionInfo ? { ...prev.sessionInfo, status: 'WAITING' } : undefined
+        sessionInfo: prev.sessionInfo ? { ...prev.sessionInfo, status: 'SCHEDULED' } : undefined
       }));
     }
   };

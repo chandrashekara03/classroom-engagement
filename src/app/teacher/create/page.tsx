@@ -17,7 +17,7 @@ export default function CreateActivity() {
   const [title, setTitle] = useState("");
   
   // Generic activity configuration payload
-  const [activityData, setActivityData] = useState<Record<string, unknown>>({
+  const [activityData, setActivityData] = useState<any>({
     questions: [],
     options: [{ id: 'opt-1', text: 'Option 1' }, { id: 'opt-2', text: 'Option 2' }]
   });

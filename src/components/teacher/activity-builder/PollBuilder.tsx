@@ -8,6 +8,7 @@ interface PollOption {
 }
 
 interface PollData {
+  question?: string;
   options: PollOption[];
 }
 
