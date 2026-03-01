@@ -10,7 +10,8 @@ import {
   BookOpen,
   LogOut,
   Menu,
-  X
+  X,
+  Box
 } from 'lucide-react';
 import { Button } from '@classroom/ui-components';
 import Link from 'next/link';
@@ -32,6 +33,12 @@ const navigationItems = [
     name: 'Activities',
     href: '/teacher/activities',
     icon: Activity,
+    current: false
+  },
+  {
+    name: 'Models',
+    href: '/teacher/models',
+    icon: Box,
     current: false
   },
   {
