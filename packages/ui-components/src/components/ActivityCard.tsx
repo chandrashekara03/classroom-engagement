@@ -49,7 +49,9 @@ export interface ActivityCardProps {
   className?: string;
 }
 
-const activityIcons: Record<ActivityType, React.ElementType> = {
+import { LucideIcon } from 'lucide-react';
+
+const activityIcons: Record<ActivityType, LucideIcon> = {
   quiz: HelpCircle,
   poll: BarChart3,
   feedback: MessageCircle,
@@ -115,7 +117,7 @@ export function ActivityCard({
           </div>
 
           {isActive && (
-            <Badge variant="success">
+            <Badge variant={"success" as any}>
               Active
             </Badge>
           )}
@@ -139,7 +141,7 @@ export function ActivityCard({
             <Users className="h-4 w-4" />
             <span>
               {isActive ? `${participantCount} active` :
-               config.maxParticipants ? `Max ${config.maxParticipants}` : 'Unlimited'}
+                config.maxParticipants ? `Max ${config.maxParticipants}` : 'Unlimited'}
             </span>
           </div>
 

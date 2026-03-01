@@ -34,7 +34,7 @@ export interface Session {
 class FirebaseDatabaseService {
   // Teacher operations
   async createTeacher(teacher: Omit<Teacher, 'createdAt' | 'lastLoginAt'>): Promise<void> {
-    const teacherRef = ref(database, `teachers/${teacher.uid}`);
+    const teacherRef = ref(database!, `teachers/${teacher.uid}`);
     const teacherData: Teacher = {
       ...teacher,
       createdAt: new Date().toISOString(),
@@ -44,19 +44,19 @@ class FirebaseDatabaseService {
   }
 
   async getTeacher(uid: string): Promise<Teacher | null> {
-    const teacherRef = ref(database, `teachers/${uid}`);
+    const teacherRef = ref(database!, `teachers/${uid}`);
     const snapshot = await get(teacherRef);
     return snapshot.exists() ? snapshot.val() : null;
   }
 
   async updateTeacherLastLogin(uid: string): Promise<void> {
-    const teacherRef = ref(database, `teachers/${uid}/lastLoginAt`);
+    const teacherRef = ref(database!, `teachers/${uid}/lastLoginAt`);
     await set(teacherRef, new Date().toISOString());
   }
 
   // Student operations
   async createStudent(student: Omit<Student, 'createdAt' | 'lastLoginAt'>): Promise<void> {
-    const studentRef = ref(database, `students/${student.uid}`);
+    const studentRef = ref(database!, `students/${student.uid}`);
     const studentData: Student = {
       ...student,
       createdAt: new Date().toISOString(),
@@ -66,19 +66,19 @@ class FirebaseDatabaseService {
   }
 
   async getStudent(uid: string): Promise<Student | null> {
-    const studentRef = ref(database, `students/${uid}`);
+    const studentRef = ref(database!, `students/${uid}`);
     const snapshot = await get(studentRef);
     return snapshot.exists() ? snapshot.val() : null;
   }
 
   async updateStudentLastLogin(uid: string): Promise<void> {
-    const studentRef = ref(database, `students/${uid}/lastLoginAt`);
+    const studentRef = ref(database!, `students/${uid}/lastLoginAt`);
     await set(studentRef, new Date().toISOString());
   }
 
   // Session operations
   async createSession(session: Omit<Session, 'createdAt' | 'participants'>): Promise<void> {
-    const sessionRef = ref(database, `sessions/${session.id}`);
+    const sessionRef = ref(database!, `sessions/${session.id}`);
     const sessionData: Session = {
       ...session,
       createdAt: new Date().toISOString(),
@@ -88,29 +88,29 @@ class FirebaseDatabaseService {
   }
 
   async getSession(sessionId: string): Promise<Session | null> {
-    const sessionRef = ref(database, `sessions/${sessionId}`);
+    const sessionRef = ref(database!, `sessions/${sessionId}`);
     const snapshot = await get(sessionRef);
     return snapshot.exists() ? snapshot.val() : null;
   }
 
   async updateSessionStatus(sessionId: string, status: Session['status']): Promise<void> {
-    const sessionRef = ref(database, `sessions/${sessionId}/status`);
+    const sessionRef = ref(database!, `sessions/${sessionId}/status`);
     await set(sessionRef, status);
   }
 
   async addParticipantToSession(sessionId: string, student: Student): Promise<void> {
-    const participantRef = ref(database, `sessions/${sessionId}/participants/${student.uid}`);
+    const participantRef = ref(database!, `sessions/${sessionId}/participants/${student.uid}`);
     await set(participantRef, student);
   }
 
   async removeParticipantFromSession(sessionId: string, studentId: string): Promise<void> {
-    const participantRef = ref(database, `sessions/${sessionId}/participants/${studentId}`);
+    const participantRef = ref(database!, `sessions/${sessionId}/participants/${studentId}`);
     await remove(participantRef);
   }
 
   // Get all teachers
   async getAllTeachers(): Promise<Teacher[]> {
-    const teachersRef = ref(database, 'teachers');
+    const teachersRef = ref(database!, 'teachers');
     const snapshot = await get(teachersRef);
     if (!snapshot.exists()) return [];
 
@@ -123,7 +123,7 @@ class FirebaseDatabaseService {
 
   // Get all students
   async getAllStudents(): Promise<Student[]> {
-    const studentsRef = ref(database, 'students');
+    const studentsRef = ref(database!, 'students');
     const snapshot = await get(studentsRef);
     if (!snapshot.exists()) return [];
 
@@ -136,7 +136,7 @@ class FirebaseDatabaseService {
 
   // Get teacher's sessions
   async getTeacherSessions(teacherId: string): Promise<Session[]> {
-    const sessionsRef = ref(database, 'sessions');
+    const sessionsRef = ref(database!, 'sessions');
     const snapshot = await get(sessionsRef);
     if (!snapshot.exists()) return [];
 
@@ -152,7 +152,7 @@ class FirebaseDatabaseService {
 
   // Real-time listeners
   onSessionUpdate(sessionId: string, callback: (session: Session) => void) {
-    const sessionRef = ref(database, `sessions/${sessionId}`);
+    const sessionRef = ref(database!, `sessions/${sessionId}`);
     onValue(sessionRef, (snapshot) => {
       if (snapshot.exists()) {
         callback(snapshot.val());
@@ -162,7 +162,7 @@ class FirebaseDatabaseService {
   }
 
   onTeachersUpdate(callback: (teachers: Teacher[]) => void) {
-    const teachersRef = ref(database, 'teachers');
+    const teachersRef = ref(database!, 'teachers');
     onValue(teachersRef, (snapshot) => {
       const teachers: Teacher[] = [];
       if (snapshot.exists()) {
@@ -176,7 +176,7 @@ class FirebaseDatabaseService {
   }
 
   onStudentsUpdate(callback: (students: Student[]) => void) {
-    const studentsRef = ref(database, 'students');
+    const studentsRef = ref(database!, 'students');
     onValue(studentsRef, (snapshot) => {
       const students: Student[] = [];
       if (snapshot.exists()) {

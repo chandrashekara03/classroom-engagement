@@ -25,9 +25,9 @@ export default function StudentLoginPage() {
 
     try {
       if (isSignUp) {
-        await createUserWithEmailAndPassword(auth, email, password);
+        await createUserWithEmailAndPassword(auth!, email, password);
       } else {
-        await signInWithEmailAndPassword(auth, email, password);
+        await signInWithEmailAndPassword(auth!, email, password);
       }
       router.push('/student');
     } catch (error: any) {
