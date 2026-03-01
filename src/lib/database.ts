@@ -44,9 +44,11 @@ class FirebaseDatabaseService {
   }
 
   async getTeacher(uid: string): Promise<Teacher | null> {
-    const teacherRef = ref(database!, `teachers/${uid}`);
-    const snapshot = await get(teacherRef);
-    return snapshot.exists() ? snapshot.val() : null;
+    try {
+      const teacherRef = ref(database!, `teachers/${uid}`);
+      const snapshot = await get(teacherRef);
+      return snapshot.exists() ? snapshot.val() : null;
+    } catch { return null; }
   }
 
   async updateTeacherLastLogin(uid: string): Promise<void> {
@@ -66,9 +68,11 @@ class FirebaseDatabaseService {
   }
 
   async getStudent(uid: string): Promise<Student | null> {
-    const studentRef = ref(database!, `students/${uid}`);
-    const snapshot = await get(studentRef);
-    return snapshot.exists() ? snapshot.val() : null;
+    try {
+      const studentRef = ref(database!, `students/${uid}`);
+      const snapshot = await get(studentRef);
+      return snapshot.exists() ? snapshot.val() : null;
+    } catch { return null; }
   }
 
   async updateStudentLastLogin(uid: string): Promise<void> {
@@ -88,9 +92,11 @@ class FirebaseDatabaseService {
   }
 
   async getSession(sessionId: string): Promise<Session | null> {
-    const sessionRef = ref(database!, `sessions/${sessionId}`);
-    const snapshot = await get(sessionRef);
-    return snapshot.exists() ? snapshot.val() : null;
+    try {
+      const sessionRef = ref(database!, `sessions/${sessionId}`);
+      const snapshot = await get(sessionRef);
+      return snapshot.exists() ? snapshot.val() : null;
+    } catch { return null; }
   }
 
   async updateSessionStatus(sessionId: string, status: Session['status']): Promise<void> {
@@ -110,44 +116,50 @@ class FirebaseDatabaseService {
 
   // Get all teachers
   async getAllTeachers(): Promise<Teacher[]> {
-    const teachersRef = ref(database!, 'teachers');
-    const snapshot = await get(teachersRef);
-    if (!snapshot.exists()) return [];
+    try {
+      const teachersRef = ref(database!, 'teachers');
+      const snapshot = await get(teachersRef);
+      if (!snapshot.exists()) return [];
 
-    const teachers: Teacher[] = [];
-    snapshot.forEach((childSnapshot) => {
-      teachers.push(childSnapshot.val());
-    });
-    return teachers;
+      const teachers: Teacher[] = [];
+      snapshot.forEach((childSnapshot) => {
+        teachers.push(childSnapshot.val());
+      });
+      return teachers;
+    } catch { return []; }
   }
 
   // Get all students
   async getAllStudents(): Promise<Student[]> {
-    const studentsRef = ref(database!, 'students');
-    const snapshot = await get(studentsRef);
-    if (!snapshot.exists()) return [];
+    try {
+      const studentsRef = ref(database!, 'students');
+      const snapshot = await get(studentsRef);
+      if (!snapshot.exists()) return [];
 
-    const students: Student[] = [];
-    snapshot.forEach((childSnapshot) => {
-      students.push(childSnapshot.val());
-    });
-    return students;
+      const students: Student[] = [];
+      snapshot.forEach((childSnapshot) => {
+        students.push(childSnapshot.val());
+      });
+      return students;
+    } catch { return []; }
   }
 
   // Get teacher's sessions
   async getTeacherSessions(teacherId: string): Promise<Session[]> {
-    const sessionsRef = ref(database!, 'sessions');
-    const snapshot = await get(sessionsRef);
-    if (!snapshot.exists()) return [];
+    try {
+      const sessionsRef = ref(database!, 'sessions');
+      const snapshot = await get(sessionsRef);
+      if (!snapshot.exists()) return [];
 
-    const sessions: Session[] = [];
-    snapshot.forEach((childSnapshot) => {
-      const session = childSnapshot.val();
-      if (session.teacherId === teacherId) {
-        sessions.push(session);
-      }
-    });
-    return sessions;
+      const sessions: Session[] = [];
+      snapshot.forEach((childSnapshot) => {
+        const session = childSnapshot.val();
+        if (session.teacherId === teacherId) {
+          sessions.push(session);
+        }
+      });
+      return sessions;
+    } catch { return []; }
   }
 
   // Real-time listeners

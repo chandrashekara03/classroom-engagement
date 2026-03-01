@@ -2,7 +2,7 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
 import { getDatabase, Database } from 'firebase/database';
-import { getAnalytics, Analytics } from 'firebase/analytics';
+import { getAnalytics, isSupported, Analytics } from 'firebase/analytics';
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -17,7 +17,7 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase only if it hasn't been initialized already
-let app;
+let app: any;
 try {
   app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 } catch {
@@ -33,8 +33,14 @@ export const database: Database | null = app ? getDatabase(app) : null;
 
 // Initialize Analytics (only on client side and with valid key)
 const isDummyKey = firebaseConfig.apiKey.startsWith('dummy-api-key');
-export const analytics = (app && typeof window !== 'undefined' && !isDummyKey) 
-  ? getAnalytics(app) 
-  : null;
+export const getAnalyticsInstance = async (): Promise<Analytics | null> => {
+  if (app && typeof window !== 'undefined' && !isDummyKey) {
+    const supported = await isSupported();
+    if (supported) {
+      return getAnalytics(app);
+    }
+  }
+  return null;
+};
 
 export { app };
