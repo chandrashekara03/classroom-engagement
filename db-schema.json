@@ -1,0 +1,88 @@
+{
+  "description": "Firebase Realtime Database Schema for Classroom Engagement",
+  "version": "1.0.0",
+  "root": {
+    "teachers": {
+      "{uid}": {
+        "uid": "string (Firebase Auth UID)",
+        "email": "string",
+        "displayName": "string",
+        "department": "string (optional)",
+        "createdAt": "ISO8601 string",
+        "lastLoginAt": "ISO8601 string"
+      }
+    },
+    "students": {
+      "{uid}": {
+        "uid": "string (Firebase Auth UID)",
+        "email": "string",
+        "displayName": "string",
+        "studentId": "string (optional)",
+        "department": "string (optional)",
+        "createdAt": "ISO8601 string",
+        "lastLoginAt": "ISO8601 string"
+      }
+    },
+    "templates": {
+      "{teacherUid}": {
+        "{templateId}": {
+          "id": "string",
+          "teacherId": "string",
+          "type": "QUIZ | POLL | FEEDBACK | PAIRING",
+          "title": "string",
+          "config": {
+            "timer": "boolean",
+            "scoring": "boolean"
+          },
+          "questions": [
+            {
+              "id": "string",
+              "text": "string",
+              "type": "MULTIPLE_CHOICE | SHORT_ANSWER",
+              "points": "number",
+              "options": [
+                {
+                  "id": "string",
+                  "text": "string",
+                  "isCorrect": "boolean"
+                }
+              ]
+            }
+          ],
+          "createdAt": "ISO8601 string"
+        }
+      }
+    },
+    "sessions": {
+      "{sessionId}": {
+        "id": "string",
+        "teacherId": "string",
+        "templateId": "string (optional)",
+        "title": "string",
+        "code": "string (6-char alphanumeric)",
+        "status": "SCHEDULED | LIVE | COMPLETED",
+        "createdAt": "ISO8601 string",
+        "startedAt": "ISO8601 string (optional)",
+        "endedAt": "ISO8601 string (optional)",
+        "participants": {
+          "{participantId}": {
+            "id": "string",
+            "name": "string",
+            "joinedAt": "ISO8601 string"
+          }
+        }
+      }
+    },
+    "responses": {
+      "{sessionId}": {
+        "{responseId}": {
+          "id": "string",
+          "participantId": "string",
+          "activityId": "string",
+          "data": "any (activity specific)",
+          "timestamp": "number (epoch)"
+        }
+      }
+    }
+  }
+}
