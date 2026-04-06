@@ -23,19 +23,22 @@ export default function ActivitiesPage() {
   const [templates, setTemplates] = useState<ActivityTemplate[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState("ALL");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
     const loadTemplates = async () => {
+      setLoading(true);
       const savedTemplates = await dbService.getTemplatesByTeacher(user.uid);
       setTemplates(savedTemplates as ActivityTemplate[]);
+      setLoading(false);
     };
     loadTemplates();
   }, [user]);
 
   const handleDelete = async (id: string) => {
     if (!user) return;
-    if (confirm("Are you sure you want to delete this template?")) {
+    if (confirm("Are you sure you want to delete this template? Permanent deletion cannot be reversed.")) {
       await dbService.deleteTemplate(user.uid, id);
       setTemplates(prev => prev.filter(t => t.id !== id));
     }
@@ -67,118 +70,136 @@ export default function ActivitiesPage() {
   });
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href="/teacher" className="p-2 hover:bg-slate-100 rounded-lg transition-colors text-slate-600">
-            <LucideChevronLeft size={24} />
+    <div className="space-y-10 animate-fade-in max-w-7xl mx-auto px-4 py-8">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="flex items-start gap-5">
+          <Link href="/teacher" className="mt-1 p-3 glass-card hover:bg-white transition-all text-slate-400 hover:text-indigo-600 shadow-xl border-white group">
+            <LucideChevronLeft size={24} className="group-hover:-translate-x-1 transition-transform" />
           </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Activity Templates</h1>
-            <p className="text-sm text-slate-500 font-medium">Manage your reusable activity building blocks</p>
+          <div className="space-y-1">
+             <h1 className="text-4xl font-black text-slate-800 tracking-tighter uppercase leading-none">Activity <span className="text-gradient">Registry</span></h1>
+             <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">Institutional Asset Management</p>
           </div>
         </div>
         <Link href="/teacher/create">
-          <Button variant="primary" className="flex items-center gap-2">
-            <LucidePlus size={18} />
-            Create Template
-          </Button>
+          <button className="flex items-center gap-3 px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-2xl shadow-indigo-100 transition-all active:scale-95 group">
+            <LucidePlus size={20} className="group-hover:rotate-90 transition-transform duration-500" />
+            Provision Template
+          </button>
         </Link>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-        <div className="relative w-full md:max-w-md">
-          <LucideSearch className="absolute left-3 top-2.5 text-slate-400" size={18} />
+      {/* Control Bar: Search & Filter */}
+      <div className="glass-card p-4 bg-white/40 border-white/60 shadow-2xl flex flex-col lg:flex-row items-center gap-4">
+        <div className="relative w-full lg:max-w-xl group">
+          <LucideSearch className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-400 transition-colors" size={20} />
           <input
             type="text"
-            placeholder="Search templates..."
+            placeholder="FILTER BY ASSET TITLE..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all font-medium text-slate-900"
+            className="w-full pl-14 pr-6 py-4 bg-white/60 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-400 transition-all font-black text-xs tracking-widest text-slate-700 uppercase placeholder:text-slate-200"
           />
         </div>
         
-        <div className="flex items-center gap-2 w-full md:w-auto">
-          <LucideFilter className="text-slate-400 mr-2" size={18} />
-          {["ALL", "QUIZ", "POLL", "FEEDBACK", "PAIRING"].map(f => (
-            <button
-              key={f}
-              onClick={() => setActiveFilter(f)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold tracking-wide transition-all ${
-                activeFilter === f 
-                  ? 'bg-blue-600 text-white shadow-sm' 
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              {f}
-            </button>
-          ))}
+        <div className="flex items-center gap-2 w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0 scrollbar-hide">
+          <div className="flex items-center gap-2 p-1.5 bg-slate-100/50 rounded-2xl border border-slate-100">
+            {["ALL", "QUIZ", "POLL", "FEEDBACK", "PAIRING"].map(f => (
+              <button
+                key={f}
+                onClick={() => setActiveFilter(f)}
+                className={`px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all uppercase ${
+                  activeFilter === f 
+                    ? 'bg-white text-indigo-600 shadow-md border-white' 
+                    : 'text-slate-400 hover:text-slate-600'
+                }`}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredTemplates.length === 0 ? (
-          <div className="col-span-full py-20 text-center space-y-4">
-            <div className="w-20 h-20 bg-slate-50 border border-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-300">
-              <LucideFilter size={40} />
+      {/* Registry Grid */}
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 opacity-50 animate-pulse">
+           {[1,2,3].map(i => (
+             <div key={i} className="h-64 glass-card bg-white/20 border-white" />
+           ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {filteredTemplates.length === 0 ? (
+            <div className="col-span-full py-32 text-center space-y-6 glass-card bg-white/20 border-white">
+              <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-200 shadow-inner">
+                <LucideFilter size={48} strokeWidth={1} />
+              </div>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">
+                {searchTerm ? "Zero matching records identified." : "No templates present in the registry."}
+              </p>
             </div>
-            <p className="text-slate-500 font-medium italic">
-              {searchTerm ? "No templates match your search." : "No activity templates found. Let's create one!"}
-            </p>
-          </div>
-        ) : (
-          filteredTemplates.map(t => (
-            <Card key={t.id} className="group hover:border-blue-300 hover:shadow-md transition-all border-slate-200">
-              <CardContent className="p-0">
-                <div className="p-5 space-y-4">
+          ) : (
+            filteredTemplates.map(t => (
+              <div key={t.id} className="group glass-card bg-white/40 border-white/60 hover:bg-white/60 hover:border-indigo-200 transition-all shadow-xl hover:shadow-2xl hover:-translate-y-2 flex flex-col relative overflow-hidden">
+                <div className="p-8 space-y-8 flex-1">
                   <div className="flex justify-between items-start">
-                    <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${
-                      t.type === 'QUIZ' ? 'bg-blue-50 text-blue-700' :
-                      t.type === 'POLL' ? 'bg-indigo-50 text-indigo-700' :
-                      t.type === 'FEEDBACK' ? 'bg-amber-50 text-amber-700' :
-                      'bg-emerald-50 text-emerald-700'
-                    }`}>
-                      {t.type}
-                    </span>
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md">
-                        <LucideEdit2 size={14} />
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(t.id)}
-                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md"
-                      >
-                        <LucideTrash2 size={14} />
-                      </button>
+                    <div className="flex flex-col gap-1">
+                      <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest w-fit ${
+                        t.type === 'QUIZ' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' :
+                        t.type === 'POLL' ? 'bg-violet-600 text-white shadow-lg shadow-violet-100' :
+                        t.type === 'FEEDBACK' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-100' :
+                        'bg-amber-600 text-white shadow-lg shadow-amber-100'
+                      }`}>
+                        {t.type}
+                      </span>
+                      <div className="text-[9px] font-black text-slate-300 uppercase tracking-widest mt-1">Ver 1.0.4</div>
+                    </div>
+                    
+                    <div className="flex gap-2">
+                       <button className="p-2.5 glass-card bg-white/50 border-white text-slate-400 hover:text-indigo-600 transition-colors shadow-sm">
+                          <LucideEdit2 size={16} />
+                       </button>
+                       <button 
+                         onClick={() => handleDelete(t.id)}
+                         className="p-2.5 glass-card bg-white/50 border-white text-slate-400 hover:text-red-500 transition-colors shadow-sm"
+                       >
+                          <LucideTrash2 size={16} />
+                       </button>
                     </div>
                   </div>
                   
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-900 leading-tight mb-1">{t.title}</h3>
-                    <p className="text-xs text-slate-500 font-medium">
-                      {t.type === 'QUIZ' ? `${t.questions?.length || 0} Questions` : t.type === 'POLL' ? 'Single Question' : 'Instructional Board'}
+                  <div className="space-y-1">
+                    <h3 className="text-2xl font-black text-slate-800 tracking-tight leading-tight uppercase group-hover:text-indigo-600 transition-colors">{t.title}</h3>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                       {t.type === 'QUIZ' ? `Complexity: ${t.questions?.length || 0} SECTIONS` : t.type === 'POLL' ? 'Single Variable' : 'Descriptive Panel'}
                     </p>
                   </div>
 
-                  <div className="pt-2">
-                    <Button 
+                  <div className="pt-4">
+                    <button 
                       onClick={() => handleLaunch(t.id)}
-                      className="w-full bg-slate-900 hover:bg-slate-800 text-white gap-2 font-bold py-2.5 text-sm"
+                      className="w-full py-4 bg-slate-900 hover:bg-indigo-600 text-white flex items-center justify-center gap-3 font-black text-xs uppercase tracking-widest rounded-2xl shadow-xl transition-all active:scale-95 group/btn"
                     >
-                      <LucidePlay size={16} className="fill-current" />
-                      Launch Now
-                    </Button>
+                      <LucidePlay size={18} className="fill-current group-hover/btn:scale-125 transition-transform" />
+                      Deploy Asset
+                    </button>
                   </div>
                 </div>
-                <div className="px-5 py-3 bg-slate-50 border-t border-slate-100 flex justify-between items-center text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-                  <span>Created: {new Date(t.createdAt).toLocaleDateString()}</span>
-                  <span>ID: {t.id.slice(4, 10)}</span>
+                
+                <div className="px-8 py-4 bg-white/40 border-t border-white/60 flex justify-between items-center text-[9px] text-slate-300 font-black uppercase tracking-widest">
+                  <span>INIT: {new Date(t.createdAt).toLocaleDateString()}</span>
+                  <span>REF: {t.id.slice(4, 10).toUpperCase()}</span>
                 </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
+                
+                {/* Visual Accent */}
+                <div className="absolute bottom-0 right-0 w-24 h-24 bg-indigo-500/5 rounded-full blur-2xl group-hover:bg-indigo-500/20 transition-all pointer-events-none" />
+              </div>
+            ))
+          )}
+        </div>
+      )}
     </div>
   );
 }

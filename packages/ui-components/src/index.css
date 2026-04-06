@@ -66,14 +66,25 @@
   --spacing-128: 32rem;
 
   --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-  --shadow-card-hover: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-card-hover: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
   --shadow-dialog: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+  --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+
+  --glass-bg: rgba(255, 255, 255, 0.65);
+  --glass-bg-dark: rgba(15, 23, 42, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.3);
+  --glass-blur: blur(12px);
+
+  --color-brand-primary: #4f46e5;
+  --color-brand-secondary: #0ea5e9;
+  --color-brand-accent: #8b5cf6;
 
   --animate-fade-in: fadeIn 0.5s ease-in-out;
   --animate-slide-up: slideUp 0.3s ease-out;
   --animate-slide-down: slideDown 0.3s ease-out;
   --animate-scale-in: scaleIn 0.2s ease-out;
   --animate-pulse-soft: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-float: float 4s ease-in-out infinite;
 
   @keyframes fadeIn {
     0% { opacity: 0; }
@@ -91,10 +102,38 @@
     0% { transform: scale(0.95); opacity: 0; }
     100% { transform: scale(1); opacity: 1; }
   }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
 }
 
 @layer base {
   body {
-    @apply bg-slate-50 text-slate-900;
+    @apply min-h-screen text-slate-900 antialiased;
+    background: radial-gradient(circle at top left, #f8fafc 0%, #f1f5f9 40%, #e2e8f0 100%);
+    background-attachment: fixed;
+  }
+}
+
+@layer utilities {
+  .glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-glass);
+    @apply rounded-2xl transition-all duration-300;
+  }
+
+  .glass-card:hover {
+    background: rgba(255, 255, 255, 0.75);
+    border-color: rgba(255, 255, 255, 0.45);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.2);
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-linear-to-r from-indigo-600 to-blue-500 font-bold;
   }
 }
