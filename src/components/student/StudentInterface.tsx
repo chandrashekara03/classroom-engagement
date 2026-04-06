@@ -24,7 +24,8 @@ import {
 } from '@classroom/ui-components';
 
 interface SessionJoinProps {
-  onJoinSession?: (sessionCode: string, studentName: string) => void | Promise<void>;
+  onValidateSession?: (sessionCode: string, sessionPassword: string) => void | Promise<void>;
+  onJoinSession?: (sessionCode: string, sessionPassword: string, studentName: string) => void | Promise<void>;
 }
 
 interface JoinedSessionProps {
@@ -44,27 +45,51 @@ interface JoinedSessionProps {
   onLeaveSession?: () => void;
 }
 
-export function SessionJoin({ onJoinSession }: SessionJoinProps) {
+export function SessionJoin({ onValidateSession, onJoinSession }: SessionJoinProps) {
   const [sessionCode, setSessionCode] = useState('');
+  const [sessionPassword, setSessionPassword] = useState('');
   const [studentName, setStudentName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isSessionVerified, setIsSessionVerified] = useState(false);
+
+  const handleVerifySession = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!sessionCode.trim() || !sessionPassword.trim()) {
+      setError('Please enter both session code and session password');
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      await new Promise(resolve => setTimeout(resolve, 800));
+      if (onValidateSession) {
+        await onValidateSession(sessionCode.toUpperCase(), sessionPassword.trim());
+      }
+      setIsSessionVerified(true);
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Invalid session code or password.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!sessionCode.trim() || !studentName.trim()) {
-      setError('Please enter both session code and your name');
+    if (!studentName.trim()) {
+      setError('Please enter your name');
       return;
     }
-    
+
     setIsLoading(true);
     setError('');
-    
+
     try {
-      // Small simulated delay for UX
-      await new Promise(resolve => setTimeout(resolve, 800));
+      await new Promise(resolve => setTimeout(resolve, 500));
       if (onJoinSession) {
-        await onJoinSession(sessionCode.toUpperCase(), studentName.trim());
+        await onJoinSession(sessionCode.toUpperCase(), sessionPassword.trim(), studentName.trim());
       }
     } catch (err: unknown) {
       setError((err as Error).message || "Failed to join session. Please check the code.");
@@ -89,54 +114,110 @@ export function SessionJoin({ onJoinSession }: SessionJoinProps) {
       {/* Join Form */}
       <Card className="w-full max-w-sm">
         <CardContent className="p-6">
-          <form onSubmit={handleJoin} className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Session Code</label>
-              <Input
-                type="text"
-                placeholder="e.g. ABC123"
-                value={sessionCode}
-                onChange={(e) => setSessionCode(e.target.value.toUpperCase())}
-                className="text-center text-lg font-mono tracking-wider"
-                maxLength={6}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Your Name</label>
-              <Input
-                type="text"
-                placeholder="Enter your name"
-                value={studentName}
-                onChange={(e) => setStudentName(e.target.value)}
-              />
-            </div>
-            
-            {error && (
-              <div className="flex items-center space-x-2 text-red-600 text-sm">
-                <AlertCircle className="w-4 h-4" />
-                <span>{error}</span>
+          {!isSessionVerified ? (
+            <form onSubmit={handleVerifySession} className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">Session Code</label>
+                <Input
+                  type="text"
+                  placeholder="e.g. ABC123"
+                  value={sessionCode}
+                  onChange={(e) => setSessionCode(e.target.value.toUpperCase())}
+                  className="text-center text-lg font-mono tracking-wider"
+                  maxLength={6}
+                />
               </div>
-            )}
-            
-            <Button 
-              type="submit" 
-              className="w-full bg-slate-900 hover:bg-slate-800 text-white font-medium shadow-sm transition-all" 
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                  Joining...
-                </>
-              ) : (
-                <>
-                  <LogIn className="w-4 h-4 mr-2" />
-                  Join Session
-                </>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">Session Password</label>
+                <Input
+                  type="password"
+                  placeholder="Enter session password"
+                  value={sessionPassword}
+                  onChange={(e) => setSessionPassword(e.target.value)}
+                />
+              </div>
+
+              {error && (
+                <div className="flex items-center space-x-2 text-red-600 text-sm">
+                  <AlertCircle className="w-4 h-4" />
+                  <span>{error}</span>
+                </div>
               )}
-            </Button>
-          </form>
+
+              <Button
+                type="submit"
+                className="w-full bg-slate-900 hover:bg-slate-800 text-white font-medium shadow-sm transition-all"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    Verifying...
+                  </>
+                ) : (
+                  <>
+                    <LogIn className="w-4 h-4 mr-2" />
+                    Verify Session
+                  </>
+                )}
+              </Button>
+            </form>
+          ) : (
+            <form onSubmit={handleJoin} className="space-y-4">
+              <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-700">
+                Session verified for code <span className="font-mono font-semibold">{sessionCode}</span>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">Your Name</label>
+                <Input
+                  type="text"
+                  placeholder="Enter your name"
+                  value={studentName}
+                  onChange={(e) => setStudentName(e.target.value)}
+                />
+              </div>
+
+              {error && (
+                <div className="flex items-center space-x-2 text-red-600 text-sm">
+                  <AlertCircle className="w-4 h-4" />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              <Button
+                type="submit"
+                className="w-full bg-slate-900 hover:bg-slate-800 text-white font-medium shadow-sm transition-all"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    Joining...
+                  </>
+                ) : (
+                  <>
+                    <LogIn className="w-4 h-4 mr-2" />
+                    Join Activity
+                  </>
+                )}
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  setIsSessionVerified(false);
+                  setStudentName('');
+                  setError('');
+                }}
+              >
+                Change Session Details
+              </Button>
+            </form>
+          )}
         </CardContent>
       </Card>
       

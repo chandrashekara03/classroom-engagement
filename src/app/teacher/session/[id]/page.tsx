@@ -4,8 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle, SessionStatusIndicator, GroupDisplay, Button } from "@classroom/ui-components";
 import { LucidePlay, LucidePause, LucideSquare, LucideUsers, LucideTimer, LucideBarChart3, LucideDices, LucideUserPlus, LucideX } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import { dbService, Session, Template, Participant, SessionResponse } from "@/lib/database";
-import { useAuth } from "@/contexts/AuthContext";
+import { useSocket } from "@/hooks/useSocket";
+import { dbService } from "@/lib/database";
 
 export default function SessionManager() {
   const { id } = useParams();
@@ -32,21 +32,42 @@ export default function SessionManager() {
 
   // Load session and template from Firebase RTDB
   useEffect(() => {
-    if (!id) return;
-
     const loadSession = async () => {
-      const session = await dbService.getSession(id as string);
-      if (!session) {
+      const currentSession = await dbService.getSession(String(id));
+      if (!currentSession) {
         router.push('/teacher');
         return;
       }
-      setSessionData(session);
-      setStatus(session.status as "LIVE" | "COMPLETED" | "SCHEDULED");
 
-      // Load template if linked
-      if (session.templateId && user?.uid) {
-        const template = await dbService.getTemplate(user.uid, session.templateId);
-        setTemplateData(template);
+      let currentTemplate: Record<string, unknown> | null = null;
+      if (currentSession.templateId) {
+        const foundTemplate = await dbService.getActivityTemplate(currentSession.templateId);
+        currentTemplate = foundTemplate as unknown as Record<string, unknown>;
+      }
+
+      setSessionData(currentSession);
+      setTemplateData(currentTemplate);
+      setStatus((currentSession.status as "LIVE" | "COMPLETED" | "SCHEDULED") || "SCHEDULED");
+    };
+
+    void loadSession();
+  }, [id, router]);
+
+  // Handle Prototype BroadcastChannel Events since no real backend exists
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const bc = new BroadcastChannel(`classroom-session-${id}`);
+    
+    bc.onmessage = (event) => {
+      const { type, payload } = event.data;
+      if (type === 'student-joined') {
+        setParticipants(p => {
+          const exists = p.find(existing => existing.id === payload.id);
+          if (exists) return p;
+          return [...p, payload];
+        });
+      } else if (type === 'student-responded') {
+        setResponses(r => [...r, payload]);
       }
     };
 
@@ -68,8 +89,9 @@ export default function SessionManager() {
     const unsubscribe = dbService.onSessionResponsesUpdate(id as string, (updated) => {
       setResponses(updated);
     });
-    return unsubscribe;
-  }, [id]);
+    
+    void dbService.updateSessionStatus(String(id), "LIVE");
+  };
 
   // Real-time session status listener
   useEffect(() => {
@@ -161,6 +183,9 @@ export default function SessionManager() {
             <span className="font-mono bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-100 italic">
               Code: {sessionData?.code || 'Loading...'}
             </span>
+            <span className="font-mono bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-100 italic">
+              Password: {sessionData?.joinPassword || '000000'}
+            </span>
             <SessionStatusIndicator status={status} />
           </div>
         </div>
@@ -168,10 +193,16 @@ export default function SessionManager() {
         <div className="flex items-center gap-3">
           {status === "LIVE" ? (
             <>
-              <button onClick={handlePauseSession} className="p-3 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors">
+              <button onClick={() => {
+                setStatus("SCHEDULED");
+                void dbService.updateSessionStatus(String(id), "SCHEDULED");
+              }} className="p-3 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors">
                 <LucidePause size={20} />
               </button>
-              <button onClick={handleEndSession} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 font-medium transition-colors">
+              <button onClick={() => {
+                setStatus("COMPLETED");
+                void dbService.updateSessionStatus(String(id), "COMPLETED");
+              }} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 font-medium transition-colors">
                 <LucideSquare size={18} fill="currentColor" />
                 End Session
               </button>

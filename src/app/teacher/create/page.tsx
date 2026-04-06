@@ -11,7 +11,8 @@ import { PollBuilder } from "@/components/teacher/activity-builder/PollBuilder";
 import { FeedbackBuilder } from "@/components/teacher/activity-builder/FeedbackBuilder";
 import { GroupingBuilder } from "@/components/teacher/activity-builder/GroupingBuilder";
 import { useAuth } from "@/contexts/AuthContext";
-import { dbService, Template } from "@/lib/database";
+import { dbService } from "@/lib/database";
+import { auth } from "@/lib/firebase";
 
 export default function CreateActivity() {
   const router = useRouter();
@@ -43,34 +44,81 @@ export default function CreateActivity() {
       alert("Please enter a title");
       return;
     }
-    if (!type) {
-      alert("Please select an activity type");
-      return;
-    }
+
     if (!user) {
-      alert("You must be logged in to save a template.");
+      alert("You need to be logged in as faculty to save templates.");
       return;
     }
+    
+    const newActivity = {
+      id: `act-${Date.now()}`,
+      teacherId: user.uid,
+      type,
+      title,
+      config: settings,
+      ...activityData,
+      createdAt: new Date().toISOString()
+    };
 
-    setIsSaving(true);
-    try {
-      const newTemplate: Omit<Template, 'createdAt'> = {
-        id: `act-${Date.now()}`,
-        teacherId: user.uid,
-        type: type as Template['type'],
-        title,
-        config: settings,
-        ...activityData,
-      };
+    // Build template object and filter out undefined values
+    const templateData: any = {
+      id: newActivity.id,
+      teacherId: newActivity.teacherId,
+      type: String(newActivity.type || ''),
+      title: newActivity.title,
+      config: newActivity.config,
+    };
 
-      await dbService.createTemplate(newTemplate);
-      router.push('/teacher');
-    } catch (error) {
-      console.error("Failed to save template:", error);
-      alert("Failed to save template. Please try again.");
-    } finally {
-      setIsSaving(false);
+    // Only add optional fields if they have defined values
+    if (Array.isArray((newActivity as any).questions)) {
+      templateData.questions = (newActivity as any).questions;
     }
+    if (Array.isArray((newActivity as any).options)) {
+      templateData.options = (newActivity as any).options;
+    }
+    if ((newActivity as any).prompt !== undefined && (newActivity as any).prompt !== null) {
+      templateData.prompt = (newActivity as any).prompt;
+    }
+    if ((newActivity as any).groupSize !== undefined && (newActivity as any).groupSize !== null) {
+      templateData.groupSize = (newActivity as any).groupSize;
+    }
+
+    // Recursively remove undefined values from the object
+    const cleanData = JSON.parse(JSON.stringify(templateData));
+    
+    try {
+      await dbService.createActivityTemplate(cleanData);
+    } catch (error: any) {
+      const isPermissionDenied =
+        error?.code === 'PERMISSION_DENIED' ||
+        error?.code === 'database/permission-denied' ||
+        String(error?.message || '').toUpperCase().includes('PERMISSION_DENIED');
+
+      if (!isPermissionDenied) {
+        throw error;
+      }
+
+      const idToken = await auth?.currentUser?.getIdToken();
+      if (!idToken) {
+        throw new Error('Authentication token unavailable. Please sign in again.');
+      }
+
+      const response = await fetch('/api/activity-templates', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify(cleanData),
+      });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload?.error || 'Failed to save template via server fallback.');
+      }
+    }
+
+    router.push('/teacher');
   };
 
   return (

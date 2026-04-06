@@ -80,6 +80,8 @@ export interface Session {
   templateId?: string;
   title: string;
   code: string;
+  joinPassword?: string;
+  templateId?: string;
   status: SessionStatus;
   createdAt: string;
   startedAt?: string;
@@ -87,25 +89,25 @@ export interface Session {
   participants: { [key: string]: Participant };
 }
 
-// ─────────────────────────────────────────────
-// Helper
-// ─────────────────────────────────────────────
-
-function assertDb(): NonNullable<typeof database> {
-  if (!database) throw new Error('Firebase Realtime Database is not initialized.');
-  return database;
+export interface ActivityTemplate {
+  id: string;
+  teacherId: string;
+  type: string;
+  title: string;
+  config?: Record<string, unknown>;
+  questions?: unknown[];
+  options?: unknown[];
+  prompt?: string;
+  groupSize?: number;
+  createdAt: string;
 }
-
-// ─────────────────────────────────────────────
-// Firebase RTDB Service
-// ─────────────────────────────────────────────
 
 class FirebaseDatabaseService {
 
   // ── Teachers ──────────────────────────────
 
   async createTeacher(teacher: Omit<Teacher, 'createdAt' | 'lastLoginAt'>): Promise<void> {
-    const db = assertDb();
+    const teacherRef = ref(database!, `teachers/${teacher.uid}`);
     const teacherData: Teacher = {
       ...teacher,
       createdAt: new Date().toISOString(),
@@ -115,23 +117,16 @@ class FirebaseDatabaseService {
   }
 
   async getTeacher(uid: string): Promise<Teacher | null> {
-    const db = assertDb();
-    const snapshot = await get(ref(db, `teachers/${uid}`));
-    return snapshot.exists() ? snapshot.val() : null;
+    try {
+      const teacherRef = ref(database!, `teachers/${uid}`);
+      const snapshot = await get(teacherRef);
+      return snapshot.exists() ? snapshot.val() : null;
+    } catch { return null; }
   }
 
   async updateTeacherLastLogin(uid: string): Promise<void> {
-    const db = assertDb();
-    await set(ref(db, `teachers/${uid}/lastLoginAt`), new Date().toISOString());
-  }
-
-  async getAllTeachers(): Promise<Teacher[]> {
-    const db = assertDb();
-    const snapshot = await get(ref(db, 'teachers'));
-    if (!snapshot.exists()) return [];
-    const teachers: Teacher[] = [];
-    snapshot.forEach((child) => teachers.push(child.val()));
-    return teachers;
+    const teacherRef = ref(database!, `teachers/${uid}/lastLoginAt`);
+    await set(teacherRef, new Date().toISOString());
   }
 
   onTeachersUpdate(callback: (teachers: Teacher[]) => void) {
@@ -148,7 +143,7 @@ class FirebaseDatabaseService {
   // ── Students ──────────────────────────────
 
   async createStudent(student: Omit<Student, 'createdAt' | 'lastLoginAt'>): Promise<void> {
-    const db = assertDb();
+    const studentRef = ref(database!, `students/${student.uid}`);
     const studentData: Student = {
       ...student,
       createdAt: new Date().toISOString(),
@@ -158,106 +153,170 @@ class FirebaseDatabaseService {
   }
 
   async getStudent(uid: string): Promise<Student | null> {
-    const db = assertDb();
-    const snapshot = await get(ref(db, `students/${uid}`));
-    return snapshot.exists() ? snapshot.val() : null;
+    try {
+      const studentRef = ref(database!, `students/${uid}`);
+      const snapshot = await get(studentRef);
+      return snapshot.exists() ? snapshot.val() : null;
+    } catch { return null; }
   }
 
   async updateStudentLastLogin(uid: string): Promise<void> {
-    const db = assertDb();
-    await set(ref(db, `students/${uid}/lastLoginAt`), new Date().toISOString());
+    const studentRef = ref(database!, `students/${uid}/lastLoginAt`);
+    await set(studentRef, new Date().toISOString());
   }
 
-  async getAllStudents(): Promise<Student[]> {
-    const db = assertDb();
-    const snapshot = await get(ref(db, 'students'));
-    if (!snapshot.exists()) return [];
-    const students: Student[] = [];
-    snapshot.forEach((child) => students.push(child.val()));
-    return students;
+  async deleteTeacher(uid: string): Promise<void> {
+    const teacherRef = ref(database!, `teachers/${uid}`);
+    await remove(teacherRef);
   }
 
-  onStudentsUpdate(callback: (students: Student[]) => void) {
-    const db = assertDb();
-    const r = ref(db, 'students');
-    onValue(r, (snapshot) => {
-      const students: Student[] = [];
-      if (snapshot.exists()) snapshot.forEach((c) => students.push(c.val()));
-      callback(students);
-    });
-    return () => off(r);
+  async deleteStudent(uid: string): Promise<void> {
+    const studentRef = ref(database!, `students/${uid}`);
+    await remove(studentRef);
   }
 
-  // ── Templates ─────────────────────────────
-
-  async createTemplate(template: Omit<Template, 'createdAt'>): Promise<void> {
-    const db = assertDb();
-    const data: Template = {
-      ...template,
-      createdAt: new Date().toISOString(),
-    };
-    await set(ref(db, `templates/${template.teacherId}/${template.id}`), data);
-  }
-
-  async getTemplatesByTeacher(teacherId: string): Promise<Template[]> {
-    const db = assertDb();
-    const snapshot = await get(ref(db, `templates/${teacherId}`));
-    if (!snapshot.exists()) return [];
-    const templates: Template[] = [];
-    snapshot.forEach((child) => templates.push(child.val()));
-    return templates;
-  }
-
-  async getTemplate(teacherId: string, templateId: string): Promise<Template | null> {
-    const db = assertDb();
-    const snapshot = await get(ref(db, `templates/${teacherId}/${templateId}`));
-    return snapshot.exists() ? snapshot.val() : null;
-  }
-
-  async deleteTemplate(teacherId: string, templateId: string): Promise<void> {
-    const db = assertDb();
-    await remove(ref(db, `templates/${teacherId}/${templateId}`));
-  }
-
-  onTemplatesUpdate(teacherId: string, callback: (templates: Template[]) => void) {
-    const db = assertDb();
-    const r = ref(db, `templates/${teacherId}`);
-    onValue(r, (snapshot) => {
-      const templates: Template[] = [];
-      if (snapshot.exists()) snapshot.forEach((c) => templates.push(c.val()));
-      callback(templates);
-    });
-    return () => off(r);
-  }
-
-  // ── Sessions ──────────────────────────────
-
+  // Session operations
   async createSession(session: Omit<Session, 'createdAt' | 'participants'>): Promise<void> {
-    const db = assertDb();
-    const data: Session = {
+    const sessionRef = ref(database!, `sessions/${session.id}`);
+    const sessionData: Session = {
       ...session,
       createdAt: new Date().toISOString(),
       participants: {},
     };
-    await set(ref(db, `sessions/${session.id}`), data);
+    await set(sessionRef, sessionData);
   }
 
   async getSession(sessionId: string): Promise<Session | null> {
-    const db = assertDb();
-    const snapshot = await get(ref(db, `sessions/${sessionId}`));
-    return snapshot.exists() ? snapshot.val() : null;
+    try {
+      const sessionRef = ref(database!, `sessions/${sessionId}`);
+      const snapshot = await get(sessionRef);
+      return snapshot.exists() ? snapshot.val() : null;
+    } catch { return null; }
+  }
+
+  async getSessionByCode(code: string): Promise<Session | null> {
+    try {
+      const sessionsRef = ref(database!, 'sessions');
+      const snapshot = await get(sessionsRef);
+      if (!snapshot.exists()) return null;
+
+      const normalizedCode = code.toUpperCase();
+      let matched: Session | null = null;
+      snapshot.forEach((childSnapshot) => {
+        const session = childSnapshot.val() as Session;
+        if (!matched && session.code?.toUpperCase() === normalizedCode) {
+          matched = session;
+        }
+      });
+      return matched;
+    } catch {
+      return null;
+    }
+  }
+
+  async updateSessionStatus(sessionId: string, status: Session['status']): Promise<void> {
+    const sessionRef = ref(database!, `sessions/${sessionId}/status`);
+    await set(sessionRef, status);
+  }
+
+  async addParticipantToSession(sessionId: string, student: Student): Promise<void> {
+    const participantRef = ref(database!, `sessions/${sessionId}/participants/${student.uid}`);
+    await set(participantRef, student);
+  }
+
+  async removeParticipantFromSession(sessionId: string, studentId: string): Promise<void> {
+    const participantRef = ref(database!, `sessions/${sessionId}/participants/${studentId}`);
+    await remove(participantRef);
+  }
+
+  // Activity template operations
+  async createActivityTemplate(template: Omit<ActivityTemplate, 'createdAt'>): Promise<void> {
+    const templateRef = ref(database!, `activityTemplates/${template.id}`);
+    
+    // Clean data: remove undefined and null values to prevent Firebase errors
+    const cleanTemplate = JSON.parse(JSON.stringify({
+      ...template,
+      createdAt: new Date().toISOString(),
+    }));
+    
+    await set(templateRef, cleanTemplate);
+  }
+
+  async getTeacherTemplates(teacherId: string): Promise<ActivityTemplate[]> {
+    try {
+      const templatesRef = ref(database!, 'activityTemplates');
+      const snapshot = await get(templatesRef);
+      if (!snapshot.exists()) return [];
+
+      const templates: ActivityTemplate[] = [];
+      snapshot.forEach((childSnapshot) => {
+        const template = childSnapshot.val() as ActivityTemplate;
+        if (template.teacherId === teacherId) {
+          templates.push(template);
+        }
+      });
+      templates.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      return templates;
+    } catch {
+      return [];
+    }
+  }
+
+  async getActivityTemplate(templateId: string): Promise<ActivityTemplate | null> {
+    try {
+      const templateRef = ref(database!, `activityTemplates/${templateId}`);
+      const snapshot = await get(templateRef);
+      return snapshot.exists() ? (snapshot.val() as ActivityTemplate) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  // Get all teachers
+  async getAllTeachers(): Promise<Teacher[]> {
+    try {
+      const teachersRef = ref(database!, 'teachers');
+      const snapshot = await get(teachersRef);
+      if (!snapshot.exists()) return [];
+
+      const teachers: Teacher[] = [];
+      snapshot.forEach((childSnapshot) => {
+        teachers.push(childSnapshot.val());
+      });
+      return teachers;
+    } catch { return []; }
+  }
+
+  // Get all students
+  async getAllStudents(): Promise<Student[]> {
+    try {
+      const studentsRef = ref(database!, 'students');
+      const snapshot = await get(studentsRef);
+      if (!snapshot.exists()) return [];
+
+      const students: Student[] = [];
+      snapshot.forEach((childSnapshot) => {
+        students.push(childSnapshot.val());
+      });
+      return students;
+    } catch { return []; }
   }
 
   async getTeacherSessions(teacherId: string): Promise<Session[]> {
-    const db = assertDb();
-    const snapshot = await get(ref(db, 'sessions'));
-    if (!snapshot.exists()) return [];
-    const sessions: Session[] = [];
-    snapshot.forEach((child) => {
-      const s = child.val() as Session;
-      if (s.teacherId === teacherId) sessions.push(s);
-    });
-    return sessions;
+    try {
+      const sessionsRef = ref(database!, 'sessions');
+      const snapshot = await get(sessionsRef);
+      if (!snapshot.exists()) return [];
+
+      const sessions: Session[] = [];
+      snapshot.forEach((childSnapshot) => {
+        const session = childSnapshot.val();
+        if (session.teacherId === teacherId) {
+          sessions.push(session);
+        }
+      });
+      return sessions;
+    } catch { return []; }
   }
 
   /** Look up a live or scheduled session by its 6-char join code */
@@ -304,41 +363,39 @@ class FirebaseDatabaseService {
 
   // Real-time listeners
   onSessionUpdate(sessionId: string, callback: (session: Session) => void) {
-    const db = assertDb();
-    const r = ref(db, `sessions/${sessionId}`);
-    onValue(r, (snapshot) => {
-      if (snapshot.exists()) callback(snapshot.val());
+    const sessionRef = ref(database!, `sessions/${sessionId}`);
+    onValue(sessionRef, (snapshot) => {
+      if (snapshot.exists()) {
+        callback(snapshot.val());
+      }
     });
     return () => off(r);
   }
 
-  onSessionParticipantsUpdate(sessionId: string, callback: (participants: Participant[]) => void) {
-    const db = assertDb();
-    const r = ref(db, `sessions/${sessionId}/participants`);
-    onValue(r, (snapshot) => {
-      const participants: Participant[] = [];
-      if (snapshot.exists()) snapshot.forEach((c) => participants.push(c.val()));
-      callback(participants);
+  onTeachersUpdate(callback: (teachers: Teacher[]) => void) {
+    const teachersRef = ref(database!, 'teachers');
+    onValue(teachersRef, (snapshot) => {
+      const teachers: Teacher[] = [];
+      if (snapshot.exists()) {
+        snapshot.forEach((childSnapshot) => {
+          teachers.push(childSnapshot.val());
+        });
+      }
+      callback(teachers);
     });
     return () => off(r);
   }
 
-  // ── Responses ─────────────────────────────
-
-  async addResponse(sessionId: string, response: Omit<SessionResponse, 'id'>): Promise<void> {
-    const db = assertDb();
-    const r = ref(db, `responses/${sessionId}`);
-    const newRef = push(r);
-    await set(newRef, { ...response, id: newRef.key });
-  }
-
-  onSessionResponsesUpdate(sessionId: string, callback: (responses: SessionResponse[]) => void) {
-    const db = assertDb();
-    const r = ref(db, `responses/${sessionId}`);
-    onValue(r, (snapshot) => {
-      const responses: SessionResponse[] = [];
-      if (snapshot.exists()) snapshot.forEach((c) => responses.push(c.val()));
-      callback(responses);
+  onStudentsUpdate(callback: (students: Student[]) => void) {
+    const studentsRef = ref(database!, 'students');
+    onValue(studentsRef, (snapshot) => {
+      const students: Student[] = [];
+      if (snapshot.exists()) {
+        snapshot.forEach((childSnapshot) => {
+          students.push(childSnapshot.val());
+        });
+      }
+      callback(students);
     });
     return () => off(r);
   }

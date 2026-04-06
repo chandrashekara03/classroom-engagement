@@ -31,36 +31,13 @@ export const useAuth = () => useContext(AuthContext);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isMocked, setIsMocked] = useState(false);
   const [userType, setUserType] = useState<'teacher' | 'student' | null>(null);
   const [teacherData, setTeacherData] = useState<Teacher | null>(null);
   const [studentData, setStudentData] = useState<Student | null>(null);
   const router = useRouter();
 
   useEffect(() => {
-    // Check for local bypass first (useful for testing when Firebase Auth isn't yet configured)
-    const mockSession = typeof window !== 'undefined' ? localStorage.getItem('mock_faculty_auth') : null;
-    const isActuallyMocked = !auth || auth.app.options.apiKey?.startsWith("dummy-api-key") || mockSession === 'true';
-
-    if (isActuallyMocked && mockSession === 'true') {
-      console.warn("Auth bypass active. Using mock user.");
-      setUser({ uid: 'admin-001', email: 'professor@christuniversity.in', displayName: 'Mock Faculty' } as User);
-      setUserType('teacher');
-      setTeacherData({
-        uid: 'admin-001',
-        email: 'professor@christuniversity.in',
-        displayName: 'Mock Faculty',
-        department: 'Computer Science',
-        createdAt: new Date().toISOString(),
-        lastLoginAt: new Date().toISOString()
-      });
-      setIsMocked(true);
-      setLoading(false);
-      return;
-    }
-
-    if (!auth || auth.app.options.apiKey?.startsWith("dummy-api-key")) {
-      setIsMocked(true);
+    if (!auth) {
       setLoading(false);
       return;
     }
@@ -121,16 +98,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = async () => {
-    if (isMocked) {
-      localStorage.removeItem('mock_faculty_auth');
-      setUser(null);
-      setUserType(null);
-      setTeacherData(null);
-      setStudentData(null);
-      router.push('/teacher/login');
-      return;
-    }
-    
     try {
       if (auth) {
         await firebaseSignOut(auth);
@@ -146,7 +113,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, logout, isMocked, userType, teacherData, studentData }}>
+    <AuthContext.Provider value={{ user, loading, logout, isMocked: false, userType, teacherData, studentData }}>
       {children}
     </AuthContext.Provider>
   );

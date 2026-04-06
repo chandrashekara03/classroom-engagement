@@ -3,7 +3,20 @@
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@classroom/ui-components';
 import { Box, Info, ExternalLink } from 'lucide-react';
-import PlanetViewer from '@/components/PlanetViewer';
+import dynamic from 'next/dynamic';
+
+// Dynamically import PlanetViewer to avoid SSR issues with WebGL
+const PlanetViewer = dynamic(() => import('@/components/PlanetViewer'), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-[65vh] md:h-[85vh] lg:h-[800px] bg-slate-900 rounded-3xl flex items-center justify-center">
+      <div className="text-white text-center">
+        <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+        <p className="text-lg font-semibold">Loading 3D Viewer...</p>
+      </div>
+    </div>
+  )
+});
 
 export default function ModelsPage() {
   const availableModels = [

@@ -11,7 +11,18 @@ const eslintConfig = defineConfig([
     ".next/**",
     "out/**",
     "build/**",
+    "dist/**",
     "next-env.d.ts",
+    // Generated and dependency files:
+    "node_modules/**",
+    ".git/**",
+    ".turbo/**",
+    "public/**",
+    "apps/student-client/.next/**",
+    // Environment and config:
+    ".env",
+    ".env.local",
+    ".env.*.local",
   ]),
 ]);
 

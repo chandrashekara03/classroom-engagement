@@ -8,7 +8,7 @@ import { LucidePlus, LucideUsers, LucideActivity, LucideBarChart2, LucideLayoutD
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../contexts/AuthContext";
-import { dbService, Session, Template } from "../../lib/database";
+import { dbService, Session, ActivityTemplate } from "../../lib/database";
 
 export default function Home() {
   return <TeacherDashboard />;
@@ -17,7 +17,7 @@ export default function Home() {
 export function TeacherDashboard() {
   const router = useRouter();
   const { user, teacherData } = useAuth();
-  const [templates, setTemplates] = useState<Template[]>([]);
+  const [templates, setTemplates] = useState<ActivityTemplate[]>([]);
   const [activeSessions, setActiveSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -30,29 +30,45 @@ export function TeacherDashboard() {
         const sessions = await dbService.getTeacherSessions(user.uid);
         setActiveSessions(sessions);
 
-        // Load templates from Firebase RTDB
-        const savedTemplates = await dbService.getTemplatesByTeacher(user.uid);
+        // Load teacher's templates from Firebase
+        let savedTemplates = await dbService.getTeacherTemplates(user.uid);
 
-        // Migrate any existing localhost templates to Firebase on first load
-        const localTemplatesRaw = localStorage.getItem('classroom_templates');
-        if (localTemplatesRaw) {
-          const localTemplates = JSON.parse(localTemplatesRaw) as Template[];
-          const firebaseIds = new Set(savedTemplates.map((t) => t.id));
-          const toMigrate = localTemplates.filter((t) => !firebaseIds.has(t.id));
-          for (const tmpl of toMigrate) {
-            await dbService.createTemplate({ ...tmpl, teacherId: user.uid });
-          }
-          if (toMigrate.length > 0) {
-            // Remove from localStorage after migration
-            localStorage.removeItem('classroom_templates');
-            const all = await dbService.getTemplatesByTeacher(user.uid);
-            setTemplates(all);
-          } else {
-            localStorage.removeItem('classroom_templates');
-            setTemplates(savedTemplates);
-          }
-        } else {
-          setTemplates(savedTemplates);
+        // Inject sample test class if not exists
+        if (!sessions.find((s) => s.code === '000000')) {
+          const sampleSession: Session = {
+            id: "session-sample-000000",
+            teacherId: user.uid,
+            code: "000000",
+            joinPassword: "000000",
+            templateId: "sample-template",
+            title: "Sample Checking Class",
+            status: "SCHEDULED",
+            createdAt: new Date().toISOString(),
+            participants: {}
+          };
+          await dbService.createSession(sampleSession);
+          setActiveSessions(prev => [...prev, sampleSession]);
+        }
+
+        if (!savedTemplates.find((t) => t.id === "sample-template")) {
+          const sampleTemplate: ActivityTemplate = {
+            id: "sample-template",
+            teacherId: user.uid,
+            title: "Sample Test Class Theme",
+            type: "QUIZ",
+            questions: [
+                { id: "q1", text: "Is this working?", options: [{id: "opt1", text: "Yes"}, {id: "opt2", text: "No"}], correctOption: "opt1", points: 1 }
+            ],
+            createdAt: new Date().toISOString(),
+          };
+          await dbService.createActivityTemplate({
+            id: sampleTemplate.id,
+            teacherId: sampleTemplate.teacherId,
+            title: sampleTemplate.title,
+            type: sampleTemplate.type,
+            questions: sampleTemplate.questions,
+          });
+          savedTemplates = await dbService.getTeacherTemplates(user.uid);
         }
       } catch (error) {
         console.error('Error loading teacher data:', error);
@@ -68,16 +84,22 @@ export function TeacherDashboard() {
     if (!user) return;
 
     try {
-      const template = templates.find((t) => t.id === templateId);
-      if (!template) return;
+      const joinPassword = window.prompt('Set session password (minimum 4 chars):', '')?.trim() || '';
+      if (joinPassword.length < 4) {
+        alert('Session password must be at least 4 characters.');
+        return;
+      }
 
+      // Generate a random 6 char code
       const code = Math.random().toString(36).substr(2, 6).toUpperCase();
       const newSession: Omit<Session, 'createdAt' | 'participants'> = {
         id: `session-${Date.now()}`,
         teacherId: user.uid,
         templateId: template.id,
         code,
-        title: template.title,
+        joinPassword,
+        templateId,
+        title: templates.find(t => t.id === templateId)?.title || 'New Session',
         status: "SCHEDULED",
       };
 

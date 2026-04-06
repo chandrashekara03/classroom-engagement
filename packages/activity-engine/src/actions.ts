@@ -3,17 +3,49 @@
  * All server actions have been replaced with Firebase RTDB client calls.
  */
 
-import { dbService, Template, Session } from '../../../src/lib/database';
+import * as admin from 'firebase-admin';
+import fs from 'node:fs';
+import path from 'node:path';
 
 /**
- * Standard response shape for all action functions.
+ * Initializes Firebase Admin for server actions.
  */
-export type ActionResponse<T = unknown> = {
-  success: boolean;
-  data?: T;
-  error?: string;
-  message?: string;
-};
+function resolveServiceAccountPath() {
+  const fromEnv = process.env.FIREBASE_SERVICE_ACCOUNT_PATH || process.env.GOOGLE_APPLICATION_CREDENTIALS;
+  if (fromEnv && fs.existsSync(fromEnv)) return fromEnv;
+
+  const cwd = process.cwd();
+  const candidate = fs
+    .readdirSync(cwd)
+    .find((file) => file.includes('firebase-adminsdk') && file.endsWith('.json'));
+
+  return candidate ? path.join(cwd, candidate) : null;
+}
+
+function getAdminDb() {
+  if (!admin.apps.length) {
+    const serviceAccountPath = resolveServiceAccountPath();
+    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'classroomengagement-2026';
+    const defaultDatabaseUrl =
+      projectId === 'classroomengagement-2026'
+        ? 'https://classroomengagement-2026-default-rtdb.asia-southeast1.firebasedatabase.app'
+        : `https://${projectId}-default-rtdb.firebaseio.com`;
+    const databaseURL = process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL || defaultDatabaseUrl;
+
+    if (serviceAccountPath) {
+      const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8')) as admin.ServiceAccount;
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+        databaseURL,
+        projectId: serviceAccount.projectId || projectId,
+      });
+    } else {
+      admin.initializeApp({ projectId, databaseURL });
+    }
+  }
+
+  return admin.database();
+}
 
 /**
  * Generates a random 6-character alphanumeric uppercase join code.
@@ -28,6 +60,16 @@ function generateJoinCode(): string {
 }
 
 /**
+ * Interfaces for responses
+ */
+export type ActionResponse<T = unknown> = {
+  success: boolean;
+  data?: T;
+  error?: string;
+  message?: string;
+};
+
+/**
  * Launches a new session from a provided activity template.
  * Creates the session record in Firebase RTDB under sessions/{sessionId}.
  */
@@ -36,29 +78,51 @@ export async function launchSession(
   template: Template
 ): Promise<ActionResponse<Session>> {
   try {
-    const code = generateJoinCode();
-    const newSession: Omit<Session, 'createdAt' | 'participants'> = {
-      id: `session-${Date.now()}`,
-      teacherId,
-      templateId: template.id,
-      title: template.title,
-      code,
-      status: 'SCHEDULED',
-    };
+    const db = getAdminDb();
+    const sessionsRef = db.ref('sessions');
 
-    await dbService.createSession(newSession);
+    let retries = 5;
+    let session: Record<string, unknown> | null = null;
 
-    const created = await dbService.getSession(newSession.id);
-    if (!created) {
-      return { success: false, error: 'Session created but could not be retrieved.' };
+    while (retries > 0) {
+      const joinCode = generateJoinCode();
+      const snapshot = await sessionsRef.get();
+      const sessions = snapshot.exists() ? Object.values(snapshot.val()) as Array<Record<string, unknown>> : [];
+      const exists = sessions.some((s) => s.join_code === joinCode || s.code === joinCode);
+
+      if (!exists) {
+        const sessionRef = sessionsRef.push();
+        session = {
+          id: sessionRef.key,
+          activity_template_id: templateId,
+          class_id: classId || null,
+          join_code: joinCode,
+          code: joinCode,
+          status: 'live',
+          started_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          participants: {},
+        };
+        await sessionRef.set(session);
+        break;
+      }
+
+      retries--;
     }
 
-    return { success: true, data: created };
+    if (!session) {
+      return {
+        success: false,
+        error: 'Failed to generate a unique join code. Please try again.',
+      };
+    }
+
+    return { success: true, data: session };
   } catch (error: unknown) {
-    console.error('launchSession error:', error);
+    console.error('SERVER ACTION ERROR: launchSession -', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'An unexpected error occurred.',
+      error: error instanceof Error ? error.message : 'An unexpected server error occurred.',
     };
   }
 }
@@ -72,31 +136,36 @@ export async function joinSessionWithCode(
   participant: { id: string; name: string }
 ): Promise<ActionResponse<{ sessionId: string; session: Session }>> {
   try {
-    const upperCode = code.toUpperCase().trim();
-
+    const db = getAdminDb();
+    const upperCode = joinCode.toUpperCase().trim();
+    
+    // Validate the input code format
     if (!/^[A-Z0-9]{6}$/.test(upperCode)) {
-      return {
-        success: false,
-        error: 'Invalid join code format. Must be 6 alphanumeric characters.',
-      };
+      return { success: false, error: 'Invalid join code format. Must be 6 alphanumeric characters.' };
     }
 
-    const session = await dbService.joinSession(upperCode, participant);
+    const sessionsSnapshot = await db.ref('sessions').get();
+    const sessions = sessionsSnapshot.exists() ? Object.values(sessionsSnapshot.val()) as Array<Record<string, unknown>> : [];
+    const session = sessions.find(
+      (s) => (s.join_code === upperCode || s.code === upperCode) && s.status === 'live'
+    );
 
-    if (!session) {
-      return { success: false, error: 'Session not found. Please check the code.' };
+    if (!session || !session.id) {
+      return { success: false, error: 'Session not found or is no longer live.' };
     }
 
-    return {
-      success: true,
-      data: { sessionId: session.id, session },
-      message: `Joined session "${session.title}" successfully.`,
-    };
+    const participantId = `stu-${Math.random().toString(36).slice(2, 8)}`;
+    await db.ref(`sessions/${session.id}/participants/${participantId}`).set({
+      id: participantId,
+      joined_at: new Date().toISOString(),
+    });
+
+    return { success: true, data: { sessionId: String(session.id) } };
   } catch (error: unknown) {
-    console.error('joinSessionWithCode error:', error);
+    console.error('SERVER ACTION ERROR: joinSessionWithCode -', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'An unexpected error occurred.',
+      error: error instanceof Error ? error.message : 'An unexpected server error occurred.',
     };
   }
 }

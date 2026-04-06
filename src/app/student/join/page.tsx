@@ -4,9 +4,18 @@ import { useState, useEffect } from 'react';
 import { SessionJoin, JoinedSession } from '@/components/student/StudentInterface';
 import ActivityParticipation, { type ActivityParticipationResponse } from '@/components/student/ActivityParticipation';
 import type { Activity, SessionStatus } from '@classroom/shared-utils';
-import { dbService, Session, SessionResponse } from '@/lib/database';
+import { useSocket } from '@/hooks/useSocket';
+import { dbService } from '@/lib/database';
 
-import { WifiOff } from 'lucide-react';
+interface StoredSession {
+  id: string;
+  code: string;
+  joinPassword?: string;
+  templateId: string;
+  title: string;
+  status: string;
+  createdAt: string;
+}
 
 interface SessionState {
   isJoined: boolean;
@@ -31,7 +40,24 @@ export default function StudentPage() {
   });
   const [isOnline, setIsOnline] = useState(true);
 
-  // Listen for session status changes and activity pushes in real-time
+  const { isConnected } = useSocket(sessionState.sessionId, 'STUDENT');
+
+  const resolveSessionByCode = async (sessionCode: string): Promise<StoredSession | null> => {
+    const firebaseSession = await dbService.getSessionByCode(sessionCode);
+    if (firebaseSession) {
+      return {
+        id: firebaseSession.id,
+        code: firebaseSession.code,
+        joinPassword: firebaseSession.joinPassword,
+        templateId: 'firebase-template',
+        title: firebaseSession.title,
+        status: firebaseSession.status,
+        createdAt: firebaseSession.createdAt,
+      };
+    }
+    return null;
+  };
+
   useEffect(() => {
     if (!sessionState.sessionId) return;
 
@@ -47,26 +73,53 @@ export default function StudentPage() {
     return unsubscribe;
   }, [sessionState.sessionId]);
 
-  // Online/offline detection
-  useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
+  const handleValidateSession = async (sessionCode: string, sessionPassword: string) => {
+    let session = await resolveSessionByCode(sessionCode);
 
-  const handleJoinSession = async (sessionCode: string, studentName: string) => {
-    const studentId = `stu-${Math.random().toString(36).substr(2, 8)}`;
-
-    // Join via Firebase RTDB — looks up session by code, adds participant
-    const session = await dbService.joinSession(sessionCode, { id: studentId, name: studentName });
+    if (!session && sessionCode === '000000') {
+      session = {
+        id: 'session-sample-000000',
+        code: '000000',
+        joinPassword: '000000',
+        templateId: 'template-sample',
+        title: 'Sample Session',
+        status: 'SCHEDULED',
+        createdAt: new Date().toISOString(),
+      };
+    }
 
     if (!session) {
       throw new Error('Invalid session code or session not found.');
+    }
+
+    const expectedPassword = String(session.joinPassword || '000000').trim();
+    if (sessionPassword.trim() !== expectedPassword) {
+      throw new Error('Incorrect session password.');
+    }
+  };
+
+  const handleJoinSession = async (sessionCode: string, sessionPassword: string, studentName: string) => {
+    let session = await resolveSessionByCode(sessionCode);
+
+    if (!session && sessionCode === '000000') {
+      session = {
+        id: 'session-sample-000000',
+        code: '000000',
+        joinPassword: '000000',
+        templateId: 'template-sample',
+        title: 'Sample Session',
+        status: 'SCHEDULED',
+        createdAt: new Date().toISOString(),
+      };
+    }
+
+    if (!session) {
+      throw new Error('Invalid session code or session not found.');
+    }
+
+    const expectedPassword = String(session.joinPassword || '000000').trim();
+    if (sessionPassword.trim() !== expectedPassword) {
+      throw new Error('Incorrect session password.');
     }
 
     setSessionState({
@@ -130,7 +183,7 @@ export default function StudentPage() {
     : false;
 
   if (!sessionState.isJoined) {
-    return <SessionJoin onJoinSession={handleJoinSession} />;
+    return <SessionJoin onValidateSession={handleValidateSession} onJoinSession={handleJoinSession} />;
   }
 
   return (
