@@ -22,7 +22,7 @@ function resolveServiceAccountPath() {
 function getAdminDb() {
   if (!admin.apps.length) {
     const serviceAccountPath = resolveServiceAccountPath();
-    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'classroomengagement-2026';
+    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'classroom-engagement-christ';
     const databaseURL =
       process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL ||
       `https://${projectId}-default-rtdb.firebaseio.com`;

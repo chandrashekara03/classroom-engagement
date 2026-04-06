@@ -12,6 +12,7 @@ import { FeedbackBuilder } from "@/components/teacher/activity-builder/FeedbackB
 import { GroupingBuilder } from "@/components/teacher/activity-builder/GroupingBuilder";
 import { useAuth } from "@/contexts/AuthContext";
 import { dbService } from "@/lib/database";
+import { auth } from "@/lib/firebase";
 
 export default function CreateActivity() {
   const router = useRouter();
@@ -84,8 +85,38 @@ export default function CreateActivity() {
     // Recursively remove undefined values from the object
     const cleanData = JSON.parse(JSON.stringify(templateData));
     
-    await dbService.createActivityTemplate(cleanData);
-    
+    try {
+      await dbService.createActivityTemplate(cleanData);
+    } catch (error: any) {
+      const isPermissionDenied =
+        error?.code === 'PERMISSION_DENIED' ||
+        error?.code === 'database/permission-denied' ||
+        String(error?.message || '').toUpperCase().includes('PERMISSION_DENIED');
+
+      if (!isPermissionDenied) {
+        throw error;
+      }
+
+      const idToken = await auth?.currentUser?.getIdToken();
+      if (!idToken) {
+        throw new Error('Authentication token unavailable. Please sign in again.');
+      }
+
+      const response = await fetch('/api/activity-templates', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify(cleanData),
+      });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload?.error || 'Failed to save template via server fallback.');
+      }
+    }
+
     router.push('/teacher');
   };
 

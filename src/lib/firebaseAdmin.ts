@@ -40,7 +40,7 @@ if (!admin.apps.length) {
             const projectId =
                 serviceAccount.projectId ||
                 process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ||
-                'classroomengagement-2026';
+                'classroom-engagement-christ';
             const databaseURL =
                 process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL ||
                 buildDefaultDatabaseUrl(projectId);
@@ -53,7 +53,7 @@ if (!admin.apps.length) {
         } else {
             const projectId =
                 process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ||
-                'classroomengagement-2026';
+                'classroom-engagement-christ';
             const databaseURL =
                 process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL ||
                 buildDefaultDatabaseUrl(projectId);

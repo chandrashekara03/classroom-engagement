@@ -33,7 +33,7 @@ function initAdmin() {
   const projectId =
     serviceAccount.project_id ||
     process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ||
-    'classroomengagement-2026';
+    'classroom-engagement-christ';
   const databaseURL =
     process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL ||
     `https://${projectId}-default-rtdb.firebaseio.com`;
