@@ -69,6 +69,28 @@ export type ActionResponse<T = unknown> = {
   message?: string;
 };
 
+export interface Template {
+  id: string;
+  title?: string;
+  classId?: string | null;
+  [key: string]: unknown;
+}
+
+export interface Session {
+  id: string;
+  teacher_id: string;
+  activity_template_id: string;
+  class_id: string | null;
+  join_code: string;
+  code: string;
+  title: string;
+  status: string;
+  started_at: string;
+  created_at: string;
+  participants: Record<string, { id: string; name: string; joined_at: string }>;
+  [key: string]: unknown;
+}
+
 /**
  * Launches a new session from a provided activity template.
  * Creates the session record in Firebase RTDB under sessions/{sessionId}.
@@ -78,26 +100,41 @@ export async function launchSession(
   template: Template
 ): Promise<ActionResponse<Session>> {
   try {
+    if (!teacherId) {
+      return { success: false, error: 'Teacher ID is required.' };
+    }
+    if (!template?.id) {
+      return { success: false, error: 'Template ID is required.' };
+    }
+
     const db = getAdminDb();
     const sessionsRef = db.ref('sessions');
 
     let retries = 5;
-    let session: Record<string, unknown> | null = null;
+    let session: Session | null = null;
 
     while (retries > 0) {
       const joinCode = generateJoinCode();
       const snapshot = await sessionsRef.get();
-      const sessions = snapshot.exists() ? Object.values(snapshot.val()) as Array<Record<string, unknown>> : [];
-      const exists = sessions.some((s) => s.join_code === joinCode || s.code === joinCode);
+      const sessionMap = snapshot.exists()
+        ? (snapshot.val() as Record<string, Partial<Session>>)
+        : {};
+      const exists = Object.values(sessionMap).some((s) => s.join_code === joinCode || s.code === joinCode);
 
       if (!exists) {
         const sessionRef = sessionsRef.push();
+        if (!sessionRef.key) {
+          throw new Error('Unable to allocate a session id.');
+        }
+
         session = {
           id: sessionRef.key,
-          activity_template_id: templateId,
-          class_id: classId || null,
+          teacher_id: teacherId,
+          activity_template_id: template.id,
+          class_id: template.classId ?? null,
           join_code: joinCode,
           code: joinCode,
+          title: template.title || 'New Session',
           status: 'live',
           started_at: new Date().toISOString(),
           created_at: new Date().toISOString(),
@@ -137,7 +174,7 @@ export async function joinSessionWithCode(
 ): Promise<ActionResponse<{ sessionId: string; session: Session }>> {
   try {
     const db = getAdminDb();
-    const upperCode = joinCode.toUpperCase().trim();
+    const upperCode = code.toUpperCase().trim();
     
     // Validate the input code format
     if (!/^[A-Z0-9]{6}$/.test(upperCode)) {
@@ -145,22 +182,54 @@ export async function joinSessionWithCode(
     }
 
     const sessionsSnapshot = await db.ref('sessions').get();
-    const sessions = sessionsSnapshot.exists() ? Object.values(sessionsSnapshot.val()) as Array<Record<string, unknown>> : [];
-    const session = sessions.find(
-      (s) => (s.join_code === upperCode || s.code === upperCode) && s.status === 'live'
+    const sessionsMap = sessionsSnapshot.exists()
+      ? (sessionsSnapshot.val() as Record<string, Partial<Session>>)
+      : {};
+
+    const matched = Object.entries(sessionsMap).find(
+      ([, s]) => {
+        const candidateCode = String(s.join_code || s.code || '').toUpperCase();
+        const candidateStatus = String(s.status || '').toLowerCase();
+        return candidateCode === upperCode && candidateStatus === 'live';
+      }
     );
 
-    if (!session || !session.id) {
+    if (!matched) {
       return { success: false, error: 'Session not found or is no longer live.' };
     }
 
-    const participantId = `stu-${Math.random().toString(36).slice(2, 8)}`;
-    await db.ref(`sessions/${session.id}/participants/${participantId}`).set({
-      id: participantId,
-      joined_at: new Date().toISOString(),
-    });
+    const [sessionKey, foundSession] = matched;
+    const sessionId = String(foundSession.id || sessionKey);
 
-    return { success: true, data: { sessionId: String(session.id) } };
+    const participantId = participant.id || `stu-${Math.random().toString(36).slice(2, 8)}`;
+    const participantPayload = {
+      id: participantId,
+      name: participant.name,
+      joined_at: new Date().toISOString(),
+    };
+
+    await db.ref(`sessions/${sessionKey}/participants/${participantId}`).set(participantPayload);
+
+    const existingParticipants =
+      (foundSession.participants as Session['participants'] | undefined) ?? {};
+    const session: Session = {
+      id: sessionId,
+      teacher_id: String(foundSession.teacher_id || ''),
+      activity_template_id: String(foundSession.activity_template_id || ''),
+      class_id: (foundSession.class_id as string | null | undefined) ?? null,
+      join_code: String(foundSession.join_code || foundSession.code || upperCode),
+      code: String(foundSession.code || foundSession.join_code || upperCode),
+      title: String(foundSession.title || 'Live Session'),
+      status: String(foundSession.status || 'live'),
+      started_at: String(foundSession.started_at || ''),
+      created_at: String(foundSession.created_at || ''),
+      participants: {
+        ...existingParticipants,
+        [participantId]: participantPayload,
+      },
+    };
+
+    return { success: true, data: { sessionId, session } };
   } catch (error: unknown) {
     console.error('SERVER ACTION ERROR: joinSessionWithCode -', error);
     return {

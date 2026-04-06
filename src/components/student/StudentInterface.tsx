@@ -24,7 +24,7 @@ import {
 } from '@classroom/ui-components';
 
 interface SessionJoinProps {
-  onJoinSession?: (sessionCode: string, studentName: string) => void | Promise<void>;
+  onJoinSession?: (sessionCode: string, sessionPassword: string, studentName: string) => void | Promise<void>;
 }
 
 interface JoinedSessionProps {
@@ -46,13 +46,14 @@ interface JoinedSessionProps {
 
 export function SessionJoin({ onJoinSession }: SessionJoinProps) {
   const [sessionCode, setSessionCode] = useState('');
+  const [sessionPassword, setSessionPassword] = useState('');
   const [studentName, setStudentName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!sessionCode.trim() || !studentName.trim()) {
+    if (!sessionCode.trim() || !sessionPassword.trim() || !studentName.trim()) {
       setError('Credentials incomplete');
       return;
     }
@@ -63,7 +64,7 @@ export function SessionJoin({ onJoinSession }: SessionJoinProps) {
     try {
       await new Promise(resolve => setTimeout(resolve, 1200));
       if (onJoinSession) {
-        await onJoinSession(sessionCode.toUpperCase(), studentName.trim());
+        await onJoinSession(sessionCode.toUpperCase(), sessionPassword.trim(), studentName.trim());
       }
     } catch (err: unknown) {
       setError((err as Error).message || "Access denied. Check session code.");
@@ -110,6 +111,17 @@ export function SessionJoin({ onJoinSession }: SessionJoinProps) {
               placeholder="Enter your full name"
               value={studentName}
               onChange={(e) => setStudentName(e.target.value)}
+              className="w-full bg-white/60 border border-indigo-100/50 rounded-2xl p-5 text-lg font-bold text-slate-700 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-400 transition-all outline-none"
+            />
+          </div>
+
+          <div className="space-y-3">
+            <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Session Password</label>
+            <input
+              type="password"
+              placeholder="Enter session password"
+              value={sessionPassword}
+              onChange={(e) => setSessionPassword(e.target.value)}
               className="w-full bg-white/60 border border-indigo-100/50 rounded-2xl p-5 text-lg font-bold text-slate-700 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-400 transition-all outline-none"
             />
           </div>

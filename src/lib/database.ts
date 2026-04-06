@@ -137,7 +137,11 @@ class FirebaseDatabaseService {
     const r = ref(db, 'teachers');
     onValue(r, (snapshot) => {
       const teachers: Teacher[] = [];
-      if (snapshot.exists()) snapshot.forEach((c) => teachers.push(c.val()));
+      if (snapshot.exists()) {
+        snapshot.forEach((c) => {
+          teachers.push(c.val());
+        });
+      }
       callback(teachers);
     });
     return () => off(r);
@@ -189,7 +193,11 @@ class FirebaseDatabaseService {
     const r = ref(db, 'students');
     onValue(r, (snapshot) => {
       const students: Student[] = [];
-      if (snapshot.exists()) snapshot.forEach((c) => students.push(c.val()));
+      if (snapshot.exists()) {
+        snapshot.forEach((c) => {
+          students.push(c.val());
+        });
+      }
       callback(students);
     });
     return () => off(r);
@@ -340,6 +348,10 @@ class FirebaseDatabaseService {
       createdAt: new Date().toISOString(),
     }));
     await set(ref(db, `activityTemplates/${template.id}`), data);
+  }
+
+  async createActivityTemplate(template: Omit<ActivityTemplate, 'createdAt'>): Promise<void> {
+    await this.createTemplate(template);
   }
 
   async getTemplatesByTeacher(teacherId: string): Promise<ActivityTemplate[]> {
