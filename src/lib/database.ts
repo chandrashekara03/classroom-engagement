@@ -27,9 +27,23 @@ export interface Session {
   title: string;
   code: string;
   joinPassword?: string;
+  templateId?: string;
   status: SessionStatus;
   createdAt: string;
   participants: { [key: string]: Student };
+}
+
+export interface ActivityTemplate {
+  id: string;
+  teacherId: string;
+  type: string;
+  title: string;
+  config?: Record<string, unknown>;
+  questions?: unknown[];
+  options?: unknown[];
+  prompt?: string;
+  groupSize?: number;
+  createdAt: string;
 }
 
 class FirebaseDatabaseService {
@@ -143,6 +157,46 @@ class FirebaseDatabaseService {
   async removeParticipantFromSession(sessionId: string, studentId: string): Promise<void> {
     const participantRef = ref(database!, `sessions/${sessionId}/participants/${studentId}`);
     await remove(participantRef);
+  }
+
+  // Activity template operations
+  async createActivityTemplate(template: Omit<ActivityTemplate, 'createdAt'>): Promise<void> {
+    const templateRef = ref(database!, `activityTemplates/${template.id}`);
+    const templateData: ActivityTemplate = {
+      ...template,
+      createdAt: new Date().toISOString(),
+    };
+    await set(templateRef, templateData);
+  }
+
+  async getTeacherTemplates(teacherId: string): Promise<ActivityTemplate[]> {
+    try {
+      const templatesRef = ref(database!, 'activityTemplates');
+      const snapshot = await get(templatesRef);
+      if (!snapshot.exists()) return [];
+
+      const templates: ActivityTemplate[] = [];
+      snapshot.forEach((childSnapshot) => {
+        const template = childSnapshot.val() as ActivityTemplate;
+        if (template.teacherId === teacherId) {
+          templates.push(template);
+        }
+      });
+      templates.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      return templates;
+    } catch {
+      return [];
+    }
+  }
+
+  async getActivityTemplate(templateId: string): Promise<ActivityTemplate | null> {
+    try {
+      const templateRef = ref(database!, `activityTemplates/${templateId}`);
+      const snapshot = await get(templateRef);
+      return snapshot.exists() ? (snapshot.val() as ActivityTemplate) : null;
+    } catch {
+      return null;
+    }
   }
 
   // Get all teachers

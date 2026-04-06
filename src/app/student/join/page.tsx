@@ -55,9 +55,7 @@ export default function StudentPage() {
         createdAt: firebaseSession.createdAt,
       };
     }
-
-    const sessions = JSON.parse(localStorage.getItem('classroom_sessions') || '[]') as StoredSession[];
-    return sessions.find((s) => s.code.toUpperCase() === sessionCode.toUpperCase()) || null;
+    return null;
   };
 
   useEffect(() => {
@@ -205,8 +203,8 @@ export default function StudentPage() {
       throw new Error('Invalid session code or session not found.');
     }
 
-    const expectedPassword = session.joinPassword || '000000';
-    if (sessionPassword !== expectedPassword) {
+    const expectedPassword = String(session.joinPassword || '000000').trim();
+    if (sessionPassword.trim() !== expectedPassword) {
       throw new Error('Incorrect session password.');
     }
   };
@@ -230,8 +228,8 @@ export default function StudentPage() {
       throw new Error('Invalid session code or session not found.');
     }
 
-    const expectedPassword = session.joinPassword || '000000';
-    if (sessionPassword !== expectedPassword) {
+    const expectedPassword = String(session.joinPassword || '000000').trim();
+    if (sessionPassword.trim() !== expectedPassword) {
       throw new Error('Incorrect session password.');
     }
 

@@ -8,7 +8,7 @@ import { LucidePlus, LucideUsers, LucideActivity, LucideBarChart2, LucideLayoutD
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../contexts/AuthContext";
-import { dbService, Session } from "../../lib/database";
+import { dbService, Session, ActivityTemplate } from "../../lib/database";
 
 export default function Home() {
   return (
@@ -19,7 +19,7 @@ export default function Home() {
 export function TeacherDashboard() {
   const router = useRouter();
   const { user, teacherData } = useAuth();
-  const [templates, setTemplates] = useState<any[]>([]);
+  const [templates, setTemplates] = useState<ActivityTemplate[]>([]);
   const [activeSessions, setActiveSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -32,8 +32,8 @@ export function TeacherDashboard() {
         const sessions = await dbService.getTeacherSessions(user.uid);
         setActiveSessions(sessions);
 
-        // For now, keep templates in localStorage since they're not in Firebase yet
-        const savedTemplates = JSON.parse(localStorage.getItem('classroom_templates') || '[]');
+        // Load teacher's templates from Firebase
+        let savedTemplates = await dbService.getTeacherTemplates(user.uid);
 
         // Inject sample test class if not exists
         if (!sessions.find((s) => s.code === '000000')) {
@@ -42,6 +42,7 @@ export function TeacherDashboard() {
             teacherId: user.uid,
             code: "000000",
             joinPassword: "000000",
+            templateId: "sample-template",
             title: "Sample Checking Class",
             status: "SCHEDULED",
             createdAt: new Date().toISOString(),
@@ -51,17 +52,25 @@ export function TeacherDashboard() {
           setActiveSessions(prev => [...prev, sampleSession]);
         }
 
-        if (!savedTemplates.find((t: any) => t.id === "sample-template")) {
-          const sampleTemplate = {
+        if (!savedTemplates.find((t) => t.id === "sample-template")) {
+          const sampleTemplate: ActivityTemplate = {
             id: "sample-template",
+            teacherId: user.uid,
             title: "Sample Test Class Theme",
             type: "QUIZ",
             questions: [
                 { id: "q1", text: "Is this working?", options: [{id: "opt1", text: "Yes"}, {id: "opt2", text: "No"}], correctOption: "opt1", points: 1 }
-            ]
+            ],
+            createdAt: new Date().toISOString(),
           };
-          savedTemplates.push(sampleTemplate);
-          localStorage.setItem('classroom_templates', JSON.stringify(savedTemplates));
+          await dbService.createActivityTemplate({
+            id: sampleTemplate.id,
+            teacherId: sampleTemplate.teacherId,
+            title: sampleTemplate.title,
+            type: sampleTemplate.type,
+            questions: sampleTemplate.questions,
+          });
+          savedTemplates = await dbService.getTeacherTemplates(user.uid);
         }
 
         setTemplates(savedTemplates);
@@ -92,6 +101,7 @@ export function TeacherDashboard() {
         teacherId: user.uid,
         code,
         joinPassword,
+        templateId,
         title: templates.find(t => t.id === templateId)?.title || 'New Session',
         status: "SCHEDULED",
         createdAt: new Date().toISOString(),

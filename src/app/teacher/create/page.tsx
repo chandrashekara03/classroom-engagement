@@ -10,9 +10,12 @@ import { QuizBuilder } from "@/components/teacher/activity-builder/QuizBuilder";
 import { PollBuilder } from "@/components/teacher/activity-builder/PollBuilder";
 import { FeedbackBuilder } from "@/components/teacher/activity-builder/FeedbackBuilder";
 import { GroupingBuilder } from "@/components/teacher/activity-builder/GroupingBuilder";
+import { useAuth } from "@/contexts/AuthContext";
+import { dbService } from "@/lib/database";
 
 export default function CreateActivity() {
   const router = useRouter();
+  const { user } = useAuth();
   const [type, setType] = useState<ActivityType | null>(null);
   const [title, setTitle] = useState("");
   
@@ -34,24 +37,38 @@ export default function CreateActivity() {
     { type: "PAIRING", label: "Grouping", description: "Automatically pair or group students instantly." },
   ];
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!title) {
       alert("Please enter a title");
+      return;
+    }
+
+    if (!user) {
+      alert("You need to be logged in as faculty to save templates.");
       return;
     }
     
     const newActivity = {
       id: `act-${Date.now()}`,
+      teacherId: user.uid,
       type,
       title,
       config: settings,
       ...activityData,
       createdAt: new Date().toISOString()
     };
-    
-    // Save to templates in localStorage for the prototype
-    const existing = JSON.parse(localStorage.getItem('classroom_templates') || '[]');
-    localStorage.setItem('classroom_templates', JSON.stringify([...existing, newActivity]));
+
+    await dbService.createActivityTemplate({
+      id: newActivity.id,
+      teacherId: newActivity.teacherId,
+      type: String(newActivity.type || ''),
+      title: newActivity.title,
+      config: newActivity.config,
+      questions: Array.isArray((newActivity as any).questions) ? (newActivity as any).questions : undefined,
+      options: Array.isArray((newActivity as any).options) ? (newActivity as any).options : undefined,
+      prompt: (newActivity as any).prompt,
+      groupSize: (newActivity as any).groupSize,
+    });
     
     router.push('/teacher');
   };

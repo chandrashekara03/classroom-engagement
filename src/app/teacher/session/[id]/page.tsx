@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, SessionStatusIndicator, Group
 import { LucidePlay, LucidePause, LucideSquare, LucideUsers, LucideTimer, LucideBarChart3, LucideDices, LucideUserPlus, LucideX } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useSocket } from "@/hooks/useSocket";
+import { dbService } from "@/lib/database";
 
 export default function SessionManager() {
   const { id } = useParams();
@@ -31,20 +32,25 @@ export default function SessionManager() {
   const { emitEvent } = useSocket(id as string, 'TEACHER');
 
   useEffect(() => {
-    // Load session and template configuration
-    const sessions = JSON.parse(localStorage.getItem('classroom_sessions') || '[]');
-    const currentSession = sessions.find((s: Record<string, unknown>) => s.id === id);
-    if (!currentSession) {
-      router.push('/');
-      return;
-    }
-    
-    const templates = JSON.parse(localStorage.getItem('classroom_templates') || '[]');
-    const currentTemplate = templates.find((t: Record<string, unknown>) => t.id === currentSession.templateId);
-    
-    setSessionData(currentSession);
-    setTemplateData(currentTemplate);
-    setStatus(currentSession.status || "SCHEDULED");
+    const loadSession = async () => {
+      const currentSession = await dbService.getSession(String(id));
+      if (!currentSession) {
+        router.push('/teacher');
+        return;
+      }
+
+      let currentTemplate: Record<string, unknown> | null = null;
+      if (currentSession.templateId) {
+        const foundTemplate = await dbService.getActivityTemplate(currentSession.templateId);
+        currentTemplate = foundTemplate as unknown as Record<string, unknown>;
+      }
+
+      setSessionData(currentSession);
+      setTemplateData(currentTemplate);
+      setStatus((currentSession.status as "LIVE" | "COMPLETED" | "SCHEDULED") || "SCHEDULED");
+    };
+
+    void loadSession();
   }, [id, router]);
 
   // Handle Prototype BroadcastChannel Events since no real backend exists
@@ -76,13 +82,7 @@ export default function SessionManager() {
       status: "LIVE"
     });
     
-    // Update local storage so if a student joins late, they know it's LIVE
-    const sessions = JSON.parse(localStorage.getItem('classroom_sessions') || '[]');
-    const sIdx = sessions.findIndex((s: Record<string, unknown>) => s.id === id);
-    if (sIdx > -1) {
-      sessions[sIdx].status = "LIVE";
-      localStorage.setItem('classroom_sessions', JSON.stringify(sessions));
-    }
+    void dbService.updateSessionStatus(String(id), "LIVE");
   };
 
   useEffect(() => {
@@ -167,10 +167,16 @@ export default function SessionManager() {
         <div className="flex items-center gap-3">
           {status === "LIVE" ? (
             <>
-              <button onClick={() => setStatus("SCHEDULED")} className="p-3 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors">
+              <button onClick={() => {
+                setStatus("SCHEDULED");
+                void dbService.updateSessionStatus(String(id), "SCHEDULED");
+              }} className="p-3 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors">
                 <LucidePause size={20} />
               </button>
-              <button onClick={() => setStatus("COMPLETED")} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 font-medium transition-colors">
+              <button onClick={() => {
+                setStatus("COMPLETED");
+                void dbService.updateSessionStatus(String(id), "COMPLETED");
+              }} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 font-medium transition-colors">
                 <LucideSquare size={18} fill="currentColor" />
                 End Session
               </button>
