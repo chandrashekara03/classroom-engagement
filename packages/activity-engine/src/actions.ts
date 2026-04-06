@@ -1,7 +1,6 @@
 /**
  * Activity Engine Actions — Firebase Edition
  * All server actions have been replaced with Firebase RTDB client calls.
- * No Supabase dependency remains.
  */
 
 import { dbService, Template, Session } from '../../../src/lib/database';
