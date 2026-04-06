@@ -53,10 +53,13 @@ export default function ActivitiesPage() {
     const newSession = {
       id: `session-${Date.now()}`,
       teacherId: user.uid,
+      teacherEmail: user.email || undefined,
       templateId,
+      type: template.type,
       code,
       title: template.title || `Session ${code}`,
       status: "SCHEDULED" as const,
+      templateSnapshot: template, // Record the exact template at the time of launch
     };
     
     await dbService.createSession(newSession);

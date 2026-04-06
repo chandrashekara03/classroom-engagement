@@ -76,7 +76,8 @@ async function main() {
     },
     admins: {},
     teachers: {},
-    students: {},
+    users: {},
+    activityLogs: {},
     sessions: {},
     activityTemplates: {},
     auditLogs: {},
@@ -87,7 +88,22 @@ async function main() {
     results[key] = await ensureSection(db, key, value);
   }
 
-  console.log('Firebase bootstrap complete:');
+  // --- NEW: Deploy Rules ---
+  console.log('Deploying security rules from database.rules.json...');
+  try {
+    const rulesPath = path.join(process.cwd(), 'database.rules.json');
+    if (fs.existsSync(rulesPath)) {
+      const rules = fs.readFileSync(rulesPath, 'utf8');
+      await db.setRules(rules);
+      console.log('✓ Security rules applied successfully');
+    } else {
+      console.warn('! database.rules.json not found, skipping rule deployment');
+    }
+  } catch (error) {
+    console.error('! Failed to apply security rules:', error.message);
+  }
+
+  console.log('\nFirebase bootstrap complete:');
   for (const [key, status] of Object.entries(results)) {
     console.log(`- ${key}: ${status}`);
   }

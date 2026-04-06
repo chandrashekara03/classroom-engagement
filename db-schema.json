@@ -12,15 +12,24 @@
         "lastLoginAt": "ISO8601 string"
       }
     },
-    "students": {
+    "users": {
       "{uid}": {
         "uid": "string (Firebase Auth UID)",
         "email": "string",
         "displayName": "string",
-        "studentId": "string (optional)",
-        "department": "string (optional)",
+        "role": "teacher | student | admin",
         "createdAt": "ISO8601 string",
         "lastLoginAt": "ISO8601 string"
+      }
+    },
+    "activityLogs": {
+      "{logId}": {
+        "sessionId": "string",
+        "type": "SESSION_CREATED | PARTICIPANT_JOINED | ...",
+        "userId": "string",
+        "userEmail": "string (optional)",
+        "timestamp": "ISO8601 string",
+        "payload": "any (event data)"
       }
     },
     "templates": {
@@ -57,9 +66,12 @@
       "{sessionId}": {
         "id": "string",
         "teacherId": "string",
+        "teacherEmail": "string (optional)",
         "templateId": "string (optional)",
+        "type": "QUIZ | POLL | FEEDBACK | PAIRING",
         "title": "string",
         "code": "string (6-char alphanumeric)",
+        "templateSnapshot": "object (exact template data at launch time)",
         "status": "SCHEDULED | LIVE | COMPLETED",
         "createdAt": "ISO8601 string",
         "startedAt": "ISO8601 string (optional)",

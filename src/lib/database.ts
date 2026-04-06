@@ -25,6 +25,25 @@ export interface Student {
   lastLoginAt: string;
 }
 
+export interface UserRole {
+  uid: string;
+  email: string;
+  role: 'teacher' | 'student' | 'admin';
+  displayName: string;
+  createdAt: string;
+  lastLoginAt: string;
+}
+
+export interface ActivityLog {
+  id: string;
+  sessionId?: string;
+  type: 'SESSION_CREATED' | 'SESSION_STARTED' | 'SESSION_ENDED' | 'PARTICIPANT_JOINED' | 'PARTICIPANT_LEFT' | 'RESPONSE_SUBMITTED';
+  payload?: any;
+  timestamp: string;
+  userId: string;
+  userEmail?: string;
+}
+
 export interface Question {
   id: string;
   text: string;
@@ -56,11 +75,14 @@ export interface SessionResponse {
 export interface Session {
   id: string;
   teacherId: string;
+  teacherEmail?: string;
   templateId?: string;
+  type?: string;
   title: string;
   code: string;
   joinPassword?: string;
   status: SessionStatus;
+  templateSnapshot?: any;
   createdAt: string;
   startedAt?: string;
   endedAt?: string;
@@ -90,6 +112,31 @@ function assertDb(): Database {
 }
 
 class FirebaseDatabaseService {
+
+  // ── Unified Users ────────────────────────────
+
+  async createUser(user: Omit<UserRole, 'createdAt' | 'lastLoginAt'>): Promise<void> {
+    const db = assertDb();
+    const userData: UserRole = {
+      ...user,
+      createdAt: new Date().toISOString(),
+      lastLoginAt: new Date().toISOString(),
+    };
+    await set(ref(db, `users/${user.uid}`), userData);
+  }
+
+  async getUser(uid: string): Promise<UserRole | null> {
+    const db = assertDb();
+    try {
+      const snapshot = await get(ref(db, `users/${uid}`));
+      return snapshot.exists() ? snapshot.val() : null;
+    } catch { return null; }
+  }
+
+  async updateUserLastLogin(uid: string): Promise<void> {
+    const db = assertDb();
+    await update(ref(db, `users/${uid}`), { lastLoginAt: new Date().toISOString() });
+  }
 
   // ── Teachers ──────────────────────────────
 
@@ -213,6 +260,26 @@ class FirebaseDatabaseService {
       participants: {},
     };
     await set(ref(db, `sessions/${session.id}`), sessionData);
+    
+    // Log initial creation
+    await this.createActivityLog({
+      sessionId: session.id,
+      type: 'SESSION_CREATED',
+      userId: session.teacherId,
+      userEmail: session.teacherEmail,
+      payload: { code: session.code, type: session.type, title: session.title }
+    });
+  }
+
+  async createActivityLog(log: Omit<ActivityLog, 'id' | 'timestamp'>): Promise<void> {
+    const db = assertDb();
+    const logRef = ref(db, 'activityLogs');
+    const newLogRef = push(logRef);
+    await set(newLogRef, {
+      ...log,
+      id: newLogRef.key,
+      timestamp: new Date().toISOString()
+    });
   }
 
   async getSession(sessionId: string): Promise<Session | null> {

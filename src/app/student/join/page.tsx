@@ -129,12 +129,29 @@ export default function StudentPage() {
       },
       submittedResponses: new Set(),
     });
+
+    // Log Join Event
+    await dbService.createActivityLog({
+      sessionId: session.id,
+      type: 'PARTICIPANT_JOINED',
+      userId: studentId,
+      userEmail: `${studentId}@mock.com`,
+      payload: { name: studentName }
+    });
   };
 
   const handleLeaveSession = async () => {
     if (sessionState.sessionId && sessionState.studentId) {
       try {
         await dbService.removeParticipantFromSession(sessionState.sessionId, sessionState.studentId);
+        
+        // Log Leave Event
+        await dbService.createActivityLog({
+          sessionId: sessionState.sessionId,
+          type: 'PARTICIPANT_LEFT',
+          userId: sessionState.studentId,
+          payload: { name: sessionState.studentName }
+        });
       } catch (e) {
         console.warn('Could not remove participant on leave:', e);
       }
@@ -156,6 +173,14 @@ export default function StudentPage() {
 
     try {
       await dbService.addResponse(sessionState.sessionId, responseData);
+      
+      // Log Response Event
+      await dbService.createActivityLog({
+        sessionId: sessionState.sessionId,
+        type: 'RESPONSE_SUBMITTED',
+        userId: sessionState.studentId,
+        payload: { activityId: currentId }
+      });
     } catch (e) {
       console.error('Failed to submit response:', e);
     }
