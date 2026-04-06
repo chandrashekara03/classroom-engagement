@@ -10,7 +10,12 @@ import {
   Search,
   MapPin,
   Link as LinkIcon,
-  Trophy
+  Trophy,
+  Clock,
+  Zap,
+  HelpCircle,
+  ChevronRight,
+  Layers
 } from 'lucide-react';
 import {
   Button,
@@ -64,7 +69,8 @@ export default function ActivityParticipation({
     if (!response || isSubmitted) return;
     
     setIsSubmitting(true);
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+    // Visual delay to allow glassmorphism animations to settle
+    await new Promise(resolve => setTimeout(resolve, 800)); 
     onSubmitResponse(response);
     setIsSubmitting(false);
   };
@@ -119,75 +125,80 @@ export default function ActivityParticipation({
   };
 
   return (
-    <div className="space-y-4">
-      {/* Activity Header */}
-      <Card>
-        <CardHeader className="text-center pb-4">
-          <div className="flex items-center justify-center space-x-2 mb-2">
-            <Badge variant="active">
-              {activity.type.replace('_', ' ')}
-            </Badge>
-            {isSubmitted && (
-              <Badge className="bg-green-100 text-green-700">
-                <Check className="w-3 h-3 mr-1" />
-                Submitted
-              </Badge>
-            )}
+    <div className="space-y-6 animate-fade-in pb-20">
+      {/* Activity Header - Institutional Branding */}
+      <div className="glass-card p-6 bg-white/40 border-indigo-100/50 shadow-xl overflow-hidden relative">
+        <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+           <Layers size={80} />
+        </div>
+        <div className="flex flex-col items-center text-center space-y-4">
+          <div className="flex items-center gap-3">
+             <div className="px-3 py-1 bg-indigo-600 text-white rounded-lg text-[10px] font-black tracking-widest uppercase">
+                {activity.type.replace('_', ' ')}
+             </div>
+             {isSubmitted && (
+                <div className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-lg text-[10px] font-black tracking-widest uppercase flex items-center gap-2">
+                   <Check size={12} />
+                   CONFIRMED
+                </div>
+             )}
           </div>
-          <CardTitle className="text-xl">{activity.title}</CardTitle>
+          <h1 className="text-3xl font-black text-slate-800 tracking-tighter uppercase leading-none">{activity.title}</h1>
           {activity.description && (
-            <p className="text-slate-600 text-sm mt-2">{activity.description}</p>
+            <p className="text-slate-500 font-medium text-sm max-w-md italic">"{activity.description}"</p>
           )}
-        </CardHeader>
-        {timeRemaining && !isSubmitted && (
-          <CardContent className="pt-0">
-            <Timer 
-              duration={timeRemaining}
-              autoStart={true}
-              className="justify-center"
-              variant="warning"
-            />
-          </CardContent>
-        )}
-      </Card>
+          
+          {timeRemaining && !isSubmitted && (
+            <div className="pt-2">
+               <div className="inline-flex items-center gap-3 px-5 py-2 bg-indigo-50 border border-indigo-100/50 rounded-2xl">
+                  <Clock size={16} className="text-indigo-600" />
+                  <Timer 
+                    duration={timeRemaining}
+                    autoStart={true}
+                    className="font-mono text-lg font-black text-indigo-700"
+                  />
+               </div>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Activity Content */}
-      {renderActivityContent()}
+      <div className="space-y-4">
+         {renderActivityContent()}
+      </div>
 
-      {/* Submit Button */}
+      {/* Submit Button - Elevated Interaction */}
       {!isSubmitted && (
-        <Button 
-          onClick={handleSubmit}
-          disabled={!response || isSubmitting}
-          className="w-full"
-          variant="primary"
-        >
-          {isSubmitting ? (
-            <>
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-              Submitting...
-            </>
-          ) : (
-            <>
-              <Send className="w-4 h-4 mr-2" />
-              Submit Response
-            </>
-          )}
-        </Button>
+        <div className="fixed bottom-6 left-6 right-6 z-40 max-w-xl mx-auto">
+          <button 
+            onClick={handleSubmit}
+            disabled={!response || isSubmitting}
+            className="w-full py-5 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-sm uppercase tracking-[0.2em] rounded-2xl shadow-2xl shadow-indigo-200 transition-all active:scale-95 disabled:opacity-30 disabled:active:scale-100"
+          >
+            {isSubmitting ? (
+              <div className="flex items-center justify-center gap-3">
+                <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin" />
+                <span>Processing...</span>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center gap-3">
+                <Send size={18} />
+                <span>Submit Final Response</span>
+              </div>
+            )}
+          </button>
+        </div>
       )}
 
       {isSubmitted && (
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-              <Check className="w-6 h-6 text-green-600" />
-            </div>
-            <h3 className="font-semibold text-slate-900 mb-1">Response Submitted!</h3>
-            <p className="text-slate-600 text-sm">
-              Thank you for participating. Please wait for the results.
-            </p>
-          </CardContent>
-        </Card>
+        <div className="glass-card p-10 bg-emerald-500 text-white text-center shadow-2xl shadow-emerald-100 animate-slide-up">
+           <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Check size={32} className="text-white" />
+           </div>
+           <h3 className="text-2xl font-black uppercase tracking-tight mb-2">Academic Success</h3>
+           <p className="text-white/80 font-bold uppercase tracking-widest text-[10px]">Your contribution has been synchronized.</p>
+        </div>
       )}
     </div>
   );
@@ -230,23 +241,21 @@ function QuizParticipation({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {activity.questions.map((question, index) => (
-        <Card key={question.id}>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base">
-                Question {index + 1}
-              </CardTitle>
-              <Badge variant="outline">
-                {question.points} pt{question.points !== 1 ? 's' : ''}
-              </Badge>
-            </div>
-            <p className="text-slate-700">{question.text}</p>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {(question.options || []).map(option => {
+        <div key={question.id} className="glass-card p-8 bg-white/60 border-indigo-50/50 hover:bg-white/80 transition-all shadow-sm">
+           <div className="flex justify-between items-start mb-6">
+              <div className="space-y-1">
+                 <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Question {index + 1}</span>
+                 <h2 className="text-xl font-black text-slate-800 leading-tight">{question.text}</h2>
+              </div>
+              <div className="px-3 py-1 bg-slate-100 text-slate-500 rounded-lg text-[10px] font-black tracking-widest uppercase">
+                 {question.points} PTS
+              </div>
+           </div>
+
+           <div className="grid gap-3">
+              {(question.options || []).map((option, optIdx) => {
                 const isSelected = question.multiple
                   ? (selectedAnswers[question.id] as string[] || []).includes(option.id)
                   : selectedAnswers[question.id] === option.id;
@@ -256,26 +265,34 @@ function QuizParticipation({
                     key={option.id}
                     onClick={() => handleAnswerSelect(question.id, option.id, !!question.multiple)}
                     disabled={isSubmitted}
-                    className={`w-full p-3 text-left rounded-lg border-2 transition-all ${
+                    className={`group w-full p-5 text-left rounded-2xl border-2 transition-all flex items-center gap-4 relative overflow-hidden ${
                       isSelected
-                        ? 'border-blue-500 bg-blue-50 text-blue-700'
-                        : 'border-slate-200 hover:border-slate-300 text-slate-700'
-                    } ${isSubmitted ? 'opacity-75 cursor-not-allowed' : 'cursor-pointer'}`}
+                        ? 'border-indigo-600 bg-indigo-50/50 shadow-indigo-100'
+                        : 'border-white bg-white/60 hover:border-indigo-100'
+                    } ${isSubmitted ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                   >
-                    <div className="flex items-center">
-                      <div className={`w-4 h-4 rounded ${question.multiple ? 'rounded-sm' : 'rounded-full'} border-2 mr-3 flex items-center justify-center ${
-                        isSelected ? 'border-blue-500 bg-blue-500' : 'border-slate-300'
-                      }`}>
-                        {isSelected && <Check className="w-2 h-2 text-white" />}
-                      </div>
-                      {option.text}
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-sm transition-all ${
+                      isSelected ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-400'
+                    }`}>
+                       {String.fromCharCode(65 + optIdx)}
                     </div>
+                    
+                    <span className={`text-sm font-bold tracking-tight ${isSelected ? 'text-indigo-800' : 'text-slate-600'}`}>
+                       {option.text}
+                    </span>
+
+                    {isSelected && (
+                      <div className="absolute right-4 animate-in zoom-in-0 duration-300">
+                         <div className="w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center shadow-lg">
+                            <Check size={14} className="text-white" strokeWidth={3} />
+                         </div>
+                      </div>
+                    )}
                   </button>
                 );
               })}
-            </div>
-          </CardContent>
-        </Card>
+           </div>
+        </div>
       ))}
     </div>
   );
@@ -302,36 +319,39 @@ function PollParticipation({
   }, [selectedOption, activity.id, onResponseChange]);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{activity.question}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
-          {activity.options.map(option => (
-            <button
-              key={option.id}
-              onClick={() => !isSubmitted && setSelectedOption(option.id)}
-              disabled={isSubmitted}
-              className={`w-full p-4 text-left rounded-lg border-2 transition-all ${
-                selectedOption === option.id
-                  ? 'border-blue-500 bg-blue-50 text-blue-700'
-                  : 'border-slate-200 hover:border-slate-300 text-slate-700'
-              } ${isSubmitted ? 'opacity-75 cursor-not-allowed' : 'cursor-pointer'}`}
-            >
-              <div className="flex items-center">
-                <div className={`w-5 h-5 rounded-full border-2 mr-3 flex items-center justify-center ${
-                  selectedOption === option.id ? 'border-blue-500 bg-blue-500' : 'border-slate-300'
-                }`}>
-                  {selectedOption === option.id && <Check className="w-3 h-3 text-white" />}
-                </div>
-                <span className="font-medium">{option.text}</span>
-              </div>
-            </button>
-          ))}
+    <div className="glass-card p-10 bg-white/60 border-indigo-100/50 text-center space-y-10 shadow-2xl">
+      <div className="space-y-4">
+        <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto shadow-xl shadow-indigo-100/50">
+           <Zap className="w-8 h-8 text-indigo-600" />
         </div>
-      </CardContent>
-    </Card>
+        <h3 className="text-2xl font-black text-slate-800 leading-tight uppercase tracking-tight">{activity.question}</h3>
+      </div>
+
+      <div className="grid gap-3">
+        {activity.options.map(option => (
+          <button
+            key={option.id}
+            onClick={() => !isSubmitted && setSelectedOption(option.id)}
+            disabled={isSubmitted}
+            className={`w-full p-6 text-left rounded-2xl border-2 transition-all flex items-center justify-between group overflow-hidden relative ${
+              selectedOption === option.id
+                ? 'border-indigo-600 bg-indigo-50/50'
+                : 'border-white bg-white hover:border-indigo-100'
+            } ${isSubmitted ? 'opacity-50' : ''}`}
+          >
+            <span className={`text-lg font-black tracking-tight ${selectedOption === option.id ? 'text-indigo-800' : 'text-slate-700'}`}>
+              {option.text}
+            </span>
+            
+            <div className={`w-8 h-8 rounded-full border-4 transition-all flex items-center justify-center ${
+              selectedOption === option.id ? 'border-indigo-600' : 'border-slate-100'
+            }`}>
+               {selectedOption === option.id && <div className="w-4 h-4 bg-indigo-600 rounded-full" />}
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -358,31 +378,33 @@ function FeedbackParticipation({
   }, [feedback, rating, activity.id, activity.enableRating, onResponseChange]);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center">
-          <MessageCircle className="w-5 h-5 mr-2" />
-          {activity.prompt}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <div className="glass-card p-10 bg-white/60 border-indigo-100/50 space-y-10 shadow-2xl">
+      <div className="space-y-4 text-center">
+         <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto shadow-xl shadow-emerald-100/50">
+            <MessageCircle className="w-8 h-8 text-emerald-600" />
+         </div>
+         <h3 className="text-2xl font-black text-slate-800 leading-tight uppercase tracking-tight">{activity.prompt}</h3>
+      </div>
+
+      <div className="space-y-8">
         {activity.enableRating && (
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Rating
+          <div className="space-y-4">
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">
+              Performance Index
             </label>
-            <div className="flex space-x-1">
+            <div className="flex justify-center gap-4">
               {[1, 2, 3, 4, 5].map(star => (
                 <button
                   key={star}
                   onClick={() => !isSubmitted && setRating(star)}
                   disabled={isSubmitted}
-                  className={`p-1 ${isSubmitted ? 'opacity-75 cursor-not-allowed' : 'cursor-pointer'}`}
+                  className={`transition-all duration-300 hover:scale-125 ${star <= rating ? 'scale-110' : ''}`}
                 >
                   <Star 
-                    className={`w-6 h-6 ${
-                      star <= rating ? 'text-amber-400 fill-current' : 'text-slate-300'
+                    className={`w-10 h-10 ${
+                      star <= rating ? 'text-amber-400 fill-current' : 'text-slate-200'
                     }`}
+                    strokeWidth={star <= rating ? 1 : 2}
                   />
                 </button>
               ))}
@@ -390,24 +412,26 @@ function FeedbackParticipation({
           </div>
         )}
         
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            Your Feedback
+        <div className="space-y-3">
+          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">
+            Detailed Testimonial
           </label>
           <textarea
             value={feedback}
             onChange={(e) => !isSubmitted && setFeedback(e.target.value)}
             disabled={isSubmitted}
-            placeholder="Share your thoughts..."
-            className="w-full h-32 p-3 border border-slate-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-75 disabled:cursor-not-allowed"
+            placeholder="Document your experience here..."
+            className="w-full h-48 p-6 bg-white/80 border-2 border-slate-100 rounded-3xl text-lg font-bold text-slate-700 placeholder:text-slate-300 focus:ring-8 focus:ring-indigo-500/5 focus:border-indigo-400 transition-all outline-none resize-none shadow-inner"
             maxLength={500}
           />
-          <div className="text-right text-sm text-slate-500 mt-1">
-            {feedback.length}/500
+          <div className="flex justify-end pr-4 mt-2">
+             <div className="px-3 py-1 bg-slate-100 text-slate-500 rounded-full text-[10px] font-black tracking-widest">
+                {feedback.length}/500 CHARS
+             </div>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
@@ -432,47 +456,48 @@ function WordRiddleParticipation({
   }, [answer, activity.id, onResponseChange]);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center">
-          <Search className="w-5 h-5 mr-2" />
-          Word Riddle
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="p-4 bg-slate-50 rounded-lg">
-          <p className="text-slate-700 text-lg leading-relaxed">{activity.riddle}</p>
+    <div className="glass-card p-10 bg-indigo-600 text-white relative overflow-hidden shadow-2xl shadow-indigo-200">
+      <div className="absolute top-0 left-0 w-full h-full opacity-5 pointer-events-none">
+         <Search size={300} className="translate-x-1/2 translate-y-1/2" />
+      </div>
+      
+      <div className="relative z-10 space-y-10">
+        <div className="space-y-6">
+           <span className="inline-block px-4 py-1.5 bg-white/20 rounded-full text-[10px] font-black tracking-widest uppercase">
+              Mystery Enigma
+           </span>
+           <h3 className="text-3xl font-black leading-tight uppercase tracking-tight">{activity.riddle}</h3>
         </div>
-        
+
         {activity.hints && activity.hints.length > 0 && (
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium text-slate-700">Hints:</h4>
-            {activity.hints.map((hint, index) => (
-              <div key={index} className="flex items-start space-x-2">
-                <div className="w-5 h-5 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center text-xs font-bold mt-0.5">
-                  {index + 1}
-                </div>
-                <p className="text-sm text-slate-600">{hint}</p>
-              </div>
-            ))}
+          <div className="space-y-3">
+             <h4 className="text-[10px] font-black text-white/40 uppercase tracking-widest">Available Intel:</h4>
+             <div className="grid gap-2">
+                {activity.hints.map((hint, index) => (
+                  <div key={index} className="flex items-center gap-3 p-4 bg-white/10 rounded-2xl border border-white/10 backdrop-blur-md">
+                     <HelpCircle size={16} className="text-indigo-200" />
+                     <p className="text-sm font-bold tracking-tight text-white/90">{hint}</p>
+                  </div>
+                ))}
+             </div>
           </div>
         )}
         
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            Your Answer
+        <div className="space-y-4 pt-6">
+          <label className="block text-[10px] font-black text-white/40 uppercase tracking-widest ml-2">
+            Input Decryption
           </label>
-          <Input
+          <input
             type="text"
             value={answer}
             onChange={(e) => !isSubmitted && setAnswer(e.target.value)}
             disabled={isSubmitted}
-            placeholder="Enter your answer..."
-            className="text-lg"
+            placeholder="Type your solution..."
+            className="w-full bg-white/20 border-2 border-white/30 rounded-2xl p-6 text-xl font-black text-white placeholder:text-white/30 focus:ring-8 focus:ring-white/10 focus:border-white transition-all outline-none uppercase tracking-[0.2em]"
           />
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
@@ -514,46 +539,54 @@ function TreasureHuntParticipation({
   const progress = ((currentClue + (answers[currentClue] ? 1 : 0)) / cluesLength) * 100;
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center">
-              <MapPin className="w-5 h-5 mr-2" />
-              Treasure Hunt Progress
-            </CardTitle>
-            <Badge variant="outline">
-              {Math.min(currentClue + 1, cluesLength)} of {cluesLength}
-            </Badge>
-          </div>
-          <Progress value={progress} className="w-full" />
-        </CardHeader>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Clue #{currentClue + 1}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="p-4 bg-amber-50 border-l-4 border-amber-400 rounded-r-lg">
-            <p className="text-amber-800">{activity.clues && activity.clues[currentClue] ? activity.clues[currentClue].text : ''}</p>
-          </div>
-          
-          {!answers[currentClue] && !isSubmitted && (
-            <ClueAnswerInput onSubmit={handleAnswerSubmit} />
-          )}
-          
-          {answers[currentClue] && (
-            <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-              <div className="flex items-center space-x-2">
-                <Check className="w-4 h-4 text-green-600" />
-                <span className="text-green-700 font-medium">Completed!</span>
-              </div>
-              <p className="text-green-600 text-sm mt-1">Answer: {answers[currentClue]}</p>
+    <div className="space-y-6">
+      <div className="glass-card p-6 bg-white/60 border-indigo-50/50 shadow-sm flex items-center justify-between">
+         <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-indigo-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200">
+               <MapPin size={24} />
             </div>
-          )}
-        </CardContent>
-      </Card>
+            <div className="space-y-1">
+               <h4 className="text-lg font-black text-slate-800 uppercase tracking-tighter leading-none">Expedition Map</h4>
+               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{currentClue + 1} OF {cluesLength} MARKERS FOUND</p>
+            </div>
+         </div>
+         <div className="w-24">
+            <Progress value={progress} className="h-2 bg-slate-100" />
+         </div>
+      </div>
+
+      <div className="glass-card p-10 bg-slate-900 text-white shadow-2xl relative overflow-hidden">
+         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(79,70,229,0.15),transparent)] pointer-events-none" />
+         
+         <div className="relative z-10 space-y-10">
+            <div className="space-y-4">
+               <span className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em]">Marker Location #{currentClue + 1}</span>
+               <div className="p-8 bg-white/5 border border-white/10 rounded-3xl backdrop-blur-xl">
+                  <p className="text-2xl font-bold tracking-tight italic leading-relaxed text-indigo-100">
+                    "{activity.clues && activity.clues[currentClue] ? activity.clues[currentClue].text : ''}"
+                  </p>
+               </div>
+            </div>
+            
+            {!answers[currentClue] && !isSubmitted && (
+              <div className="pt-4">
+                 <ClueAnswerInput onSubmit={handleAnswerSubmit} />
+              </div>
+            )}
+            
+            {answers[currentClue] && (
+              <div className="p-6 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-center gap-4 animate-in fade-in zoom-in-95">
+                 <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg">
+                    <Check size={20} className="text-white" />
+                 </div>
+                 <div className="space-y-1">
+                    <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">COORDINATES EXTRACTED</span>
+                    <p className="text-xl font-black text-white">{answers[currentClue]}</p>
+                 </div>
+              </div>
+            )}
+         </div>
+      </div>
     </div>
   );
 }
@@ -570,17 +603,21 @@ function ClueAnswerInput({ onSubmit }: { onSubmit: (answer: string) => void }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex space-x-2">
-      <Input
+    <form onSubmit={handleSubmit} className="flex gap-3">
+      <input
         type="text"
         value={answer}
         onChange={(e) => setAnswer(e.target.value)}
-        placeholder="Enter your answer..."
-        className="flex-1"
+        placeholder="Enter location data..."
+        className="flex-1 bg-white/5 border-2 border-white/10 rounded-2xl px-6 py-4 text-lg font-bold text-white placeholder:text-white/20 focus:ring-8 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none"
       />
-      <Button type="submit" disabled={!answer.trim()}>
-        <ArrowRight className="w-4 h-4" />
-      </Button>
+      <button 
+        type="submit" 
+        disabled={!answer.trim()}
+        className="px-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-lg transition-all active:scale-90 disabled:opacity-30"
+      >
+        <ArrowRight size={20} strokeWidth={3} />
+      </button>
     </form>
   );
 }
@@ -622,44 +659,47 @@ function PairingParticipation({
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center">
-          <LinkIcon className="w-5 h-5 mr-2" />
-          Match the Pairs
-        </CardTitle>
-        <p className="text-slate-600">Match items from the left column with items from the right column</p>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
-          {(activity.leftItems || []).map(leftItem => (
-            <div key={leftItem.id} className="flex items-center space-x-4">
-              <div className="flex-1 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <span className="font-medium text-blue-800">{leftItem.text}</span>
+    <div className="glass-card p-10 bg-white/60 border-indigo-100/50 space-y-10 shadow-2xl">
+      <div className="space-y-4 text-center">
+         <div className="w-16 h-16 bg-indigo-100 rounded-3xl flex items-center justify-center mx-auto shadow-xl shadow-indigo-100/50 rotate-3">
+            <LinkIcon className="w-8 h-8 text-indigo-600 -rotate-3" />
+         </div>
+         <h3 className="text-2xl font-black text-slate-800 leading-tight uppercase tracking-tight">Conceptual Nexus</h3>
+      </div>
+
+      <div className="space-y-4">
+        {(activity.leftItems || []).map(leftItem => {
+          const paired = getPairedRightId(leftItem.id);
+          return (
+            <div key={leftItem.id} className="flex items-center gap-4 group">
+              <div className="flex-1 p-5 glass-card bg-indigo-50 border-indigo-100/50 shadow-sm text-center">
+                <span className="font-black text-indigo-800 text-sm">{leftItem.text}</span>
               </div>
               
-              <ArrowRight className="w-4 h-4 text-slate-400" />
+              <div className={`p-2 rounded-full transition-all ${paired ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-300'}`}>
+                 <ArrowRight size={16} strokeWidth={3} />
+              </div>
               
               <div className="flex-1">
                 <select
-                  value={getPairedRightId(leftItem.id) || ''}
+                  value={paired || ''}
                   onChange={(e) => handlePairSelect(leftItem.id, e.target.value)}
                   disabled={isSubmitted}
-                  className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-75 disabled:cursor-not-allowed"
+                  className="w-full p-4 bg-white border-2 border-slate-100 rounded-2xl font-bold text-slate-700 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all appearance-none text-center cursor-pointer disabled:opacity-50"
                 >
-                  <option value="">Select a match...</option>
+                  <option value="">AWAITING MATCH</option>
                   {(activity.rightItems || []).map(rightItem => (
                     <option key={rightItem.id} value={rightItem.id}>
-                      {rightItem.text}
+                      {rightItem.text.toUpperCase()}
                     </option>
                   ))}
                 </select>
               </div>
             </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -686,67 +726,80 @@ function ScenarioParticipation({
   }, [selectedChoice, reasoning, activity.id, onResponseChange]);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center">
-          <Trophy className="w-5 h-5 mr-2" />
-          Decision Scenario
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="p-4 bg-slate-50 rounded-lg border-l-4 border-slate-400">
-          <p className="text-slate-700 leading-relaxed">{activity.scenario}</p>
-        </div>
-        
-        <div className="space-y-3">
-          <h4 className="font-medium text-slate-900">What would you do?</h4>
-          {activity.choices.map(choice => (
-            <button
-              key={choice.id}
-              onClick={() => !isSubmitted && setSelectedChoice(choice.id)}
-              disabled={isSubmitted}
-              className={`w-full p-4 text-left rounded-lg border-2 transition-all ${
-                selectedChoice === choice.id
-                  ? 'border-blue-500 bg-blue-50 text-blue-700'
-                  : 'border-slate-200 hover:border-slate-300 text-slate-700'
-              } ${isSubmitted ? 'opacity-75 cursor-not-allowed' : 'cursor-pointer'}`}
-            >
-              <div className="flex items-start space-x-3">
-                <div className={`w-5 h-5 rounded-full border-2 mt-0.5 flex items-center justify-center ${
-                  selectedChoice === choice.id ? 'border-blue-500 bg-blue-500' : 'border-slate-300'
-                }`}>
-                  {selectedChoice === choice.id && <Check className="w-3 h-3 text-white" />}
-                </div>
-                <div>
-                  <div className="font-medium mb-1">{choice.text}</div>
-                  {choice.description && (
-                    <div className="text-sm opacity-75">{choice.description}</div>
-                  )}
-                </div>
-              </div>
-            </button>
-          ))}
+    <div className="space-y-6">
+      <div className="glass-card p-10 bg-slate-900 text-white shadow-2xl relative overflow-hidden">
+         <div className="absolute -top-20 -right-20 w-64 h-64 bg-indigo-600/20 rounded-full blur-[100px]" />
+         <div className="relative z-10 space-y-6">
+            <div className="flex items-center gap-4">
+               <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center border border-white/10">
+                  <Trophy className="w-6 h-6 text-indigo-400" />
+               </div>
+               <h3 className="text-xl font-black text-indigo-100 uppercase tracking-widest leading-none">Decision Terminal</h3>
+            </div>
+            <div className="p-8 bg-white/5 border border-white/10 rounded-3xl backdrop-blur-2xl">
+               <p className="text-xl font-medium tracking-tight leading-relaxed italic text-white/90">
+                 "{activity.scenario}"
+               </p>
+            </div>
+         </div>
+      </div>
+
+      <div className="glass-card p-10 bg-white/80 border-indigo-100/50 shadow-xl space-y-8">
+        <div className="space-y-4">
+           <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] text-center">Protocol Selection</h4>
+           <div className="grid gap-3">
+              {activity.choices.map(choice => (
+                <button
+                  key={choice.id}
+                  onClick={() => !isSubmitted && setSelectedChoice(choice.id)}
+                  disabled={isSubmitted}
+                  className={`w-full p-6 text-left rounded-2xl border-2 transition-all group relative overflow-hidden ${
+                    selectedChoice === choice.id
+                      ? 'border-indigo-600 bg-indigo-50/50'
+                      : 'border-slate-100 bg-white hover:border-indigo-100 shadow-sm'
+                  } ${isSubmitted ? 'opacity-50' : ''}`}
+                >
+                  <div className="flex items-start gap-4">
+                    <div className={`w-8 h-8 rounded-full border-4 flex items-center justify-center transition-all mt-1 ${
+                      selectedChoice === choice.id ? 'border-indigo-600' : 'border-slate-100'
+                    }`}>
+                      {selectedChoice === choice.id && <div className="w-3 h-3 bg-indigo-600 rounded-full animate-in zoom-in" />}
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <div className={`text-lg font-black tracking-tighter uppercase ${selectedChoice === choice.id ? 'text-indigo-800' : 'text-slate-700'}`}>
+                         {choice.text}
+                      </div>
+                      {choice.description && (
+                        <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">{choice.description}</div>
+                      )}
+                    </div>
+                  </div>
+                </button>
+              ))}
+           </div>
         </div>
         
         {activity.requireReasoning && (
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Explain your reasoning
+          <div className="space-y-4">
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 text-center">
+              Strategic Rationale
             </label>
             <textarea
               value={reasoning}
               onChange={(e) => !isSubmitted && setReasoning(e.target.value)}
               disabled={isSubmitted}
-              placeholder="Why did you choose this option?"
-              className="w-full h-24 p-3 border border-slate-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-75 disabled:cursor-not-allowed"
+              placeholder="Justify your decision protocol..."
+              className="w-full h-32 p-6 bg-slate-50 border-2 border-slate-100 rounded-3xl font-bold text-slate-700 focus:ring-8 focus:ring-indigo-500/5 focus:border-indigo-400 transition-all outline-none resize-none"
               maxLength={300}
             />
-            <div className="text-right text-sm text-slate-500 mt-1">
-              {reasoning.length}/300
+            <div className="flex justify-end pr-4 mt-2">
+               <div className="px-3 py-1 bg-slate-100 text-slate-500 rounded-full text-[10px] font-black tracking-widest">
+                  {reasoning.length}/300 CHARS
+               </div>
             </div>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
