@@ -33,10 +33,14 @@ function initAdmin() {
   const projectId =
     serviceAccount.project_id ||
     process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ||
-    'classroom-engagement-christ';
+    'classroomengagement-2026';
+  const defaultDatabaseUrl =
+    projectId === 'classroomengagement-2026'
+      ? 'https://classroomengagement-2026-default-rtdb.asia-southeast1.firebasedatabase.app'
+      : `https://${projectId}-default-rtdb.firebaseio.com`;
   const databaseURL =
     process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL ||
-    `https://${projectId}-default-rtdb.firebaseio.com`;
+    defaultDatabaseUrl;
 
   console.log(`Using Firebase project: ${projectId}`);
   console.log(`Using Realtime DB URL: ${databaseURL}`);

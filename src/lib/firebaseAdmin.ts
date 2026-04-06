@@ -24,6 +24,9 @@ function resolveServiceAccountPath() {
 }
 
 function buildDefaultDatabaseUrl(projectId: string) {
+    if (projectId === 'classroomengagement-2026') {
+        return 'https://classroomengagement-2026-default-rtdb.asia-southeast1.firebasedatabase.app';
+    }
     return `https://${projectId}-default-rtdb.firebaseio.com`;
 }
 
@@ -40,7 +43,7 @@ if (!admin.apps.length) {
             const projectId =
                 serviceAccount.projectId ||
                 process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ||
-                'classroom-engagement-christ';
+                'classroomengagement-2026';
             const databaseURL =
                 process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL ||
                 buildDefaultDatabaseUrl(projectId);
@@ -53,7 +56,7 @@ if (!admin.apps.length) {
         } else {
             const projectId =
                 process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ||
-                'classroom-engagement-christ';
+                'classroomengagement-2026';
             const databaseURL =
                 process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL ||
                 buildDefaultDatabaseUrl(projectId);

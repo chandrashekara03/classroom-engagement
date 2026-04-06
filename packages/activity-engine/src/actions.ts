@@ -22,10 +22,12 @@ function resolveServiceAccountPath() {
 function getAdminDb() {
   if (!admin.apps.length) {
     const serviceAccountPath = resolveServiceAccountPath();
-    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'classroom-engagement-christ';
-    const databaseURL =
-      process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL ||
-      `https://${projectId}-default-rtdb.firebaseio.com`;
+    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'classroomengagement-2026';
+    const defaultDatabaseUrl =
+      projectId === 'classroomengagement-2026'
+        ? 'https://classroomengagement-2026-default-rtdb.asia-southeast1.firebasedatabase.app'
+        : `https://${projectId}-default-rtdb.firebaseio.com`;
+    const databaseURL = process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL || defaultDatabaseUrl;
 
     if (serviceAccountPath) {
       const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8')) as admin.ServiceAccount;
