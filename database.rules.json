@@ -22,11 +22,24 @@
         ".write": "auth != null && auth.uid == $teacherUid"
       }
     },
+    "users": {
+      "$uid": {
+        ".read": "auth != null",
+        ".write": "auth != null && (auth.uid == $uid || root.child('users').child(auth.uid).child('role').val() == 'admin')"
+      }
+    },
+    "activityLogs": {
+      ".read": "auth != null && root.child('users').child(auth.uid).child('role').val() == 'teacher'",
+      "$logId": {
+        ".write": "auth != null",
+        ".validate": "!data.exists()"
+      }
+    },
     "sessions": {
       ".read": true,
       "$sessionId": {
         ".read": true,
-        ".write": "auth != null && data.child('teacherId').val() == auth.uid || !data.exists()",
+        ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() == 'teacher' || auth.uid == data.child('teacherId').val() || !data.exists())",
         "participants": {
           "$participantId": {
             ".write": "auth == null || auth.uid == $participantId || !data.exists()"
