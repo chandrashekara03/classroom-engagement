@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle, SessionStatusIndicator, GroupDisplay, Button } from "@classroom/ui-components";
 import { LucidePlay, LucidePause, LucideSquare, LucideUsers, LucideTimer, LucideBarChart3, LucideDices, LucideUserPlus, LucideX } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
@@ -10,13 +10,14 @@ import { dbService } from "@/lib/database";
 export default function SessionManager() {
   const { id } = useParams();
   const router = useRouter();
-  const [sessionData, setSessionData] = useState<any | null>(null);
-  const [templateData, setTemplateData] = useState<any | null>(null);
-  
+  const { user } = useAuth();
+
+  const [sessionData, setSessionData] = useState<Session | null>(null);
+  const [templateData, setTemplateData] = useState<Template | null>(null);
   const [status, setStatus] = useState<"LIVE" | "COMPLETED" | "SCHEDULED">("SCHEDULED");
-  const [responses, setResponses] = useState<any[]>([]);
+  const [responses, setResponses] = useState<SessionResponse[]>([]);
   const [timer, setTimer] = useState(60);
-  const [participants, setParticipants] = useState<{ id: string; name: string; [key: string]: any }[]>([]);
+  const [participants, setParticipants] = useState<Participant[]>([]);
 
   // Random Name Picker State
   const [pickedName, setPickedName] = useState<string | null>(null);
@@ -29,8 +30,7 @@ export default function SessionManager() {
   const [groupSize, setGroupSize] = useState<number>(3);
   const [showGroups, setShowGroups] = useState(false);
 
-  const { emitEvent } = useSocket(id as string, 'TEACHER');
-
+  // Load session and template from Firebase RTDB
   useEffect(() => {
     const loadSession = async () => {
       const currentSession = await dbService.getSession(String(id));
@@ -70,21 +70,39 @@ export default function SessionManager() {
         setResponses(r => [...r, payload]);
       }
     };
-    
-    return () => bc.close();
+
+    loadSession();
+  }, [id, router, user]);
+
+  // Real-time participants listener
+  useEffect(() => {
+    if (!id) return;
+    const unsubscribe = dbService.onSessionParticipantsUpdate(id as string, (updated) => {
+      setParticipants(updated);
+    });
+    return unsubscribe;
   }, [id]);
 
-  const handleStartSession = () => {
-    setStatus("LIVE");
-    // Emit to clients that the session started
-    emitEvent('session-started', { 
-      templateData,
-      status: "LIVE"
+  // Real-time responses listener
+  useEffect(() => {
+    if (!id) return;
+    const unsubscribe = dbService.onSessionResponsesUpdate(id as string, (updated) => {
+      setResponses(updated);
     });
     
     void dbService.updateSessionStatus(String(id), "LIVE");
   };
 
+  // Real-time session status listener
+  useEffect(() => {
+    if (!id) return;
+    const unsubscribe = dbService.onSessionUpdate(id as string, (session) => {
+      setStatus(session.status as "LIVE" | "COMPLETED" | "SCHEDULED");
+    });
+    return unsubscribe;
+  }, [id]);
+
+  // Countdown timer when LIVE
   useEffect(() => {
     if (status === "LIVE" && timer > 0) {
       const interval = setInterval(() => setTimer((t) => t - 1), 1000);
@@ -92,12 +110,33 @@ export default function SessionManager() {
     }
   }, [status, timer]);
 
-  const handlePickRandomName = () => {
+  const handleStartSession = async () => {
+    if (!id) return;
+    await dbService.updateSessionStatus(id as string, "LIVE", {
+      startedAt: new Date().toISOString(),
+    });
+    setStatus("LIVE");
+  };
+
+  const handlePauseSession = async () => {
+    if (!id) return;
+    await dbService.updateSessionStatus(id as string, "SCHEDULED");
+    setStatus("SCHEDULED");
+  };
+
+  const handleEndSession = async () => {
+    if (!id) return;
+    await dbService.updateSessionStatus(id as string, "COMPLETED", {
+      endedAt: new Date().toISOString(),
+    });
+    setStatus("COMPLETED");
+  };
+
+  const handlePickRandomName = useCallback(() => {
     if (participants.length === 0) return;
     setIsPicking(true);
     setPickedName(null);
-    
-    // Animation effect
+
     let count = 0;
     const maxCount = 20;
     const interval = setInterval(() => {
@@ -107,44 +146,31 @@ export default function SessionManager() {
       if (count >= maxCount) {
         clearInterval(interval);
         setIsPicking(false);
-        // Final pick
         const finalIndex = Math.floor(Math.random() * participants.length);
-        const finalStudent = participants[finalIndex];
-        setPickedName(finalStudent.name);
-        // Optionally emit to students
-        emitEvent('random-student-picked', { studentId: finalStudent.id, name: finalStudent.name });
+        setPickedName(participants[finalIndex].name);
       }
     }, 100);
-  };
+  }, [participants]);
 
-  const handleGenerateGroups = () => {
+  const handleGenerateGroups = useCallback(() => {
     if (participants.length === 0) return;
-    
-    // Shuffle participants
+
     const shuffled = [...participants].sort(() => 0.5 - Math.random());
-    const newGroups = [];
+    const newGroups: SessionGroup[] = [];
     const numGroups = Math.ceil(shuffled.length / groupSize);
-    
+
     for (let i = 0; i < numGroups; i++) {
-      const members = shuffled.slice(i * groupSize, (i + 1) * groupSize).map(p => ({
+      const members = shuffled.slice(i * groupSize, (i + 1) * groupSize).map((p) => ({
         id: p.id,
         name: p.name,
-        isPresent: true
+        isPresent: true,
       }));
-      
-      newGroups.push({
-        id: `group-${i + 1}`,
-        name: `Group ${i + 1}`,
-        members
-      });
+      newGroups.push({ id: `group-${i + 1}`, name: `Group ${i + 1}`, members });
     }
-    
+
     setGroups(newGroups);
     setShowGroups(true);
-    
-    // Notify students
-    emitEvent('groups-formed', { groups: newGroups });
-  };
+  }, [participants, groupSize]);
 
   return (
     <div className="space-y-6 pb-20">
@@ -181,6 +207,8 @@ export default function SessionManager() {
                 End Session
               </button>
             </>
+          ) : status === "COMPLETED" ? (
+            <span className="text-slate-500 font-medium px-4 py-2 bg-slate-100 rounded-lg">Session Ended</span>
           ) : (
             <button onClick={handleStartSession} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 font-medium transition-colors">
               <LucidePlay size={18} fill="currentColor" />
@@ -228,7 +256,7 @@ export default function SessionManager() {
         </Card>
       </div>
 
-      {/* Utilities Section: Matchmaker & Random Name Picker */}
+      {/* Utilities Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <Card>
           <CardHeader>
@@ -247,8 +275,8 @@ export default function SessionManager() {
                 <div className="text-slate-400 italic">No one picked yet</div>
               )}
             </div>
-            <Button 
-              onClick={handlePickRandomName} 
+            <Button
+              onClick={handlePickRandomName}
               disabled={isPicking || participants.length === 0}
               className="w-full max-w-[200px]"
             >
@@ -271,10 +299,10 @@ export default function SessionManager() {
           <CardContent className="flex flex-col justify-center min-h-[200px] space-y-4">
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700 block">Participants per group</label>
-              <input 
-                type="range" 
-                min="2" max="6" 
-                value={groupSize} 
+              <input
+                type="range"
+                min="2" max="6"
+                value={groupSize}
                 onChange={(e) => setGroupSize(parseInt(e.target.value))}
                 className="w-full"
               />
@@ -284,12 +312,12 @@ export default function SessionManager() {
             </div>
             <p className="text-sm text-slate-600 text-center">
               Target: <span className="font-bold text-slate-900">{groupSize} members</span> per group
-              <br/>
+              <br />
               <span className="text-xs">
                 (Will create ~{participants.length ? Math.ceil(participants.length / groupSize) : 0} groups)
               </span>
             </p>
-            <Button 
+            <Button
               onClick={handleGenerateGroups}
               disabled={participants.length < 2}
               className="w-full"
@@ -304,16 +332,16 @@ export default function SessionManager() {
       {/* Generated Groups Display */}
       {showGroups && groups.length > 0 && (
         <div className="relative border-2 border-blue-100 rounded-xl p-6 bg-white shadow-sm">
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             className="absolute top-4 right-4"
             onClick={() => setShowGroups(false)}
           >
             <LucideX size={16} className="mr-1" /> Hide Groups
           </Button>
-          <GroupDisplay 
-            groups={groups} 
+          <GroupDisplay
+            groups={groups}
             title="Assigned Groups"
             showShuffle={true}
             onShuffle={handleGenerateGroups}
@@ -341,23 +369,24 @@ export default function SessionManager() {
                 {templateData?.type === 'QUIZ' && (
                   <div className="space-y-2">
                     <p className="font-semibold text-slate-700">Live Leaderboard</p>
-                    {/* Simulated Leaderboard View */}
                     <div className="space-y-2">
                       {participants.map((p, i) => (
                         <div key={p.id} className="flex justify-between items-center p-3 bg-slate-50 border border-slate-100 rounded-lg">
                           <span className="font-medium text-slate-900">{i + 1}. {p.name}</span>
-                          <span className="text-blue-600 font-bold">{Math.floor(Math.random() * 100)} pts</span>
+                          <span className="text-blue-600 font-bold">
+                            {responses.filter((r) => r.participantId === p.id).length * 10} pts
+                          </span>
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
-                
+
                 {templateData?.type === 'POLL' && (
                   <div className="space-y-4">
                     <p className="font-semibold text-slate-700">Live Poll Results</p>
-                    {templateData.options?.map((opt: any, i: number) => {
-                      const votes = Math.floor(Math.random() * responses.length);
+                    {templateData.options?.map((opt, i) => {
+                      const votes = responses.filter((r) => (r.data as Record<string, unknown>)?.optionId === opt.id).length;
                       const percentage = responses.length ? Math.round((votes / responses.length) * 100) : 0;
                       return (
                         <div key={i} className="space-y-1">
@@ -380,7 +409,7 @@ export default function SessionManager() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {responses.map((r, i) => (
                         <div key={i} className="p-4 bg-amber-50 rounded-xl border border-amber-100 shadow-sm">
-                          <p className="italic text-slate-800">&ldquo;{r.data || 'No response recorded'}&rdquo;</p>
+                          <p className="italic text-slate-800">&ldquo;{String(r.data) || 'No response recorded'}&rdquo;</p>
                           <p className="text-xs text-amber-600 mt-2 font-medium">- Anonymous</p>
                         </div>
                       ))}
@@ -405,10 +434,12 @@ export default function SessionManager() {
           <CardContent>
             <div className="space-y-3">
               {participants.length === 0 && (
-                <div className="text-slate-500 italic py-4 text-center">No participants joined yet. Share the code {sessionData?.code}</div>
+                <div className="text-slate-500 italic py-4 text-center">
+                  No participants joined yet. Share the code: <strong>{sessionData?.code}</strong>
+                </div>
               )}
               {participants.map((p) => {
-                const hasResponded = responses.some(r => r.participantId === p.id);
+                const hasResponded = responses.some((r) => r.participantId === p.id);
                 return (
                   <div key={p.id} className="flex items-center justify-between text-sm py-3 border-b border-slate-100">
                     <span className="font-semibold text-slate-700">{p.name} <span className="text-slate-400 text-xs ml-2">#{p.id.slice(0, 4)}</span></span>

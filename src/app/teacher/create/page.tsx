@@ -19,9 +19,10 @@ export default function CreateActivity() {
   const { user } = useAuth();
   const [type, setType] = useState<ActivityType | null>(null);
   const [title, setTitle] = useState("");
-  
+  const [isSaving, setIsSaving] = useState(false);
+
   // Generic activity configuration payload
-  const [activityData, setActivityData] = useState<any>({
+  const [activityData, setActivityData] = useState<Record<string, unknown>>({
     questions: [],
     options: [{ id: 'opt-1', text: 'Option 1' }, { id: 'opt-2', text: 'Option 2' }]
   });
@@ -156,14 +157,9 @@ export default function CreateActivity() {
                     options: [{ id: 'opt-1', text: '' }, { id: 'opt-2', text: '' }]
                   });
                 } else if (item.type === "FEEDBACK") {
-                  setActivityData({
-                    prompt: ""
-                  });
+                  setActivityData({ prompt: "" });
                 } else if (item.type === "PAIRING") {
-                  setActivityData({
-                    prompt: "",
-                    groupSize: 4
-                  });
+                  setActivityData({ prompt: "", groupSize: 4 });
                 }
               }}
               className="text-left p-6 rounded-xl border-2 border-slate-100 hover:border-blue-500 hover:bg-blue-50 transition-all group"
@@ -192,11 +188,11 @@ export default function CreateActivity() {
               </div>
 
               <div className="pt-4 border-t border-slate-100">
-                {type === "QUIZ" && <QuizBuilder data={activityData} onChange={setActivityData} />}
-                {type === "POLL" && <PollBuilder data={activityData} onChange={setActivityData} />}
-                {type === "FEEDBACK" && <FeedbackBuilder data={activityData} onChange={setActivityData} />}
-                {type === "PAIRING" && <GroupingBuilder data={activityData} onChange={setActivityData} />}
-                
+                {type === "QUIZ" && <QuizBuilder data={activityData as any} onChange={setActivityData as any} />}
+                {type === "POLL" && <PollBuilder data={activityData as any} onChange={setActivityData as any} />}
+                {type === "FEEDBACK" && <FeedbackBuilder data={activityData as any} onChange={setActivityData as any} />}
+                {type === "PAIRING" && <GroupingBuilder data={activityData as any} onChange={setActivityData as any} />}
+
                 {type !== "QUIZ" && type !== "POLL" && type !== "FEEDBACK" && type !== "PAIRING" && (
                   <div className="p-4 rounded-lg bg-orange-50 border border-orange-100 text-orange-600 text-sm flex items-center gap-2">
                     <LucideSettings size={16} />
@@ -216,27 +212,32 @@ export default function CreateActivity() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4 pt-6">
-                <ToggleItem 
-                  icon={<LucideTimer size={16} />} 
-                  label="Timer" 
+                <ToggleItem
+                  icon={<LucideTimer size={16} />}
+                  label="Timer"
                   value={settings.timer}
-                  onChange={() => setSettings(s => ({ ...s, timer: !s.timer }))}
+                  onChange={() => setSettings((s) => ({ ...s, timer: !s.timer }))}
                 />
-                <ToggleItem 
-                  icon={<LucideTrophy size={16} />} 
-                  label="Scoring" 
+                <ToggleItem
+                  icon={<LucideTrophy size={16} />}
+                  label="Scoring"
                   value={settings.scoring}
-                  onChange={() => setSettings(s => ({ ...s, scoring: !s.scoring }))}
+                  onChange={() => setSettings((s) => ({ ...s, scoring: !s.scoring }))}
                 />
               </CardContent>
             </Card>
 
-            <button 
+            <button
               onClick={handleSave}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold flex items-center justify-center gap-2 py-3 rounded-lg transition-colors shadow-sm"
+              disabled={isSaving}
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-semibold flex items-center justify-center gap-2 py-3 rounded-lg transition-colors shadow-sm"
             >
-              <LucideSave size={20} />
-              Save Template
+              {isSaving ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <LucideSave size={20} />
+              )}
+              {isSaving ? 'Saving...' : 'Save Template'}
             </button>
             <button onClick={() => setType(null)} className="w-full text-slate-500 hover:text-slate-700 text-sm hover:underline font-medium">
               Change Activity Type
@@ -255,7 +256,7 @@ function ToggleItem({ icon, label, value, onChange }: { icon: React.ReactNode; l
         {icon}
         {label}
       </div>
-      <button 
+      <button
         type="button"
         onClick={onChange}
         className={`w-11 h-6 rounded-full relative transition-colors ${value ? 'bg-blue-600' : 'bg-slate-300'}`}

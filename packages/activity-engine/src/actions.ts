@@ -1,4 +1,7 @@
-'use server';
+/**
+ * Activity Engine Actions — Firebase Edition
+ * All server actions have been replaced with Firebase RTDB client calls.
+ */
 
 import * as admin from 'firebase-admin';
 import fs from 'node:fs';
@@ -45,7 +48,7 @@ function getAdminDb() {
 }
 
 /**
- * Generates a random 6-character alphanumeric uppercase join code
+ * Generates a random 6-character alphanumeric uppercase join code.
  */
 function generateJoinCode(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -68,11 +71,12 @@ export type ActionResponse<T = unknown> = {
 
 /**
  * Launches a new session from a provided activity template.
- * @param templateId UUID of the activity template
- * @param classId Optional UUID of a specific class
- * @returns ActionResponse containing the new session data
+ * Creates the session record in Firebase RTDB under sessions/{sessionId}.
  */
-export async function launchSession(templateId: string, classId?: string): Promise<ActionResponse> {
+export async function launchSession(
+  teacherId: string,
+  template: Template
+): Promise<ActionResponse<Session>> {
   try {
     const db = getAdminDb();
     const sessionsRef = db.ref('sessions');
@@ -124,11 +128,13 @@ export async function launchSession(templateId: string, classId?: string): Promi
 }
 
 /**
- * Allows a student to join a live session via its join code.
- * @param joinCode 6-character alphanumeric string 
- * @returns ActionResponse containing the joined sessionId
+ * Allows a student to join a live/scheduled session via its join code.
+ * Writes participant entry to sessions/{sessionId}/participants/{participantId}.
  */
-export async function joinSessionWithCode(joinCode: string): Promise<ActionResponse<{ sessionId: string }>> {
+export async function joinSessionWithCode(
+  code: string,
+  participant: { id: string; name: string }
+): Promise<ActionResponse<{ sessionId: string; session: Session }>> {
   try {
     const db = getAdminDb();
     const upperCode = joinCode.toUpperCase().trim();

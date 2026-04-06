@@ -5,6 +5,8 @@ import { Card, CardContent, Button } from "@classroom/ui-components";
 import { LucidePlus, LucideSearch, LucidePlay, LucideEdit2, LucideTrash2, LucideFilter, LucideChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { dbService } from "@/lib/database";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ActivityTemplate {
   id: string;
@@ -17,39 +19,44 @@ interface ActivityTemplate {
 
 export default function ActivitiesPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [templates, setTemplates] = useState<ActivityTemplate[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState("ALL");
 
   useEffect(() => {
-    const savedTemplates = JSON.parse(localStorage.getItem('classroom_templates') || '[]');
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setTemplates(savedTemplates);
-  }, []);
+    if (!user) return;
+    const loadTemplates = async () => {
+      const savedTemplates = await dbService.getTemplatesByTeacher(user.uid);
+      setTemplates(savedTemplates as ActivityTemplate[]);
+    };
+    loadTemplates();
+  }, [user]);
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
+    if (!user) return;
     if (confirm("Are you sure you want to delete this template?")) {
-      const updated = templates.filter(t => t.id !== id);
-      localStorage.setItem('classroom_templates', JSON.stringify(updated));
-      setTemplates(updated);
+      await dbService.deleteTemplate(user.uid, id);
+      setTemplates(prev => prev.filter(t => t.id !== id));
     }
   };
 
-  const handleLaunch = (templateId: string) => {
+  const handleLaunch = async (templateId: string) => {
+    if (!user) return;
     const template = templates.find(t => t.id === templateId);
+    if (!template) return;
+
     const code = Math.random().toString(36).substr(2, 6).toUpperCase();
     const newSession = {
       id: `session-${Date.now()}`,
-      code,
+      teacherId: user.uid,
       templateId,
-      title: template?.title || `Session ${code}`,
-      status: "WAITING",
-      createdAt: new Date().toISOString()
+      code,
+      title: template.title || `Session ${code}`,
+      status: "SCHEDULED" as const,
     };
     
-    const existing = JSON.parse(localStorage.getItem('classroom_sessions') || '[]');
-    localStorage.setItem('classroom_sessions', JSON.stringify([...existing, newSession]));
-    
+    await dbService.createSession(newSession);
     router.push(`/teacher/session/${newSession.id}`);
   };
 
