@@ -162,11 +162,14 @@ class FirebaseDatabaseService {
   // Activity template operations
   async createActivityTemplate(template: Omit<ActivityTemplate, 'createdAt'>): Promise<void> {
     const templateRef = ref(database!, `activityTemplates/${template.id}`);
-    const templateData: ActivityTemplate = {
+    
+    // Clean data: remove undefined and null values to prevent Firebase errors
+    const cleanTemplate = JSON.parse(JSON.stringify({
       ...template,
       createdAt: new Date().toISOString(),
-    };
-    await set(templateRef, templateData);
+    }));
+    
+    await set(templateRef, cleanTemplate);
   }
 
   async getTeacherTemplates(teacherId: string): Promise<ActivityTemplate[]> {

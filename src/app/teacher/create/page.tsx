@@ -58,17 +58,33 @@ export default function CreateActivity() {
       createdAt: new Date().toISOString()
     };
 
-    await dbService.createActivityTemplate({
+    // Build template object and filter out undefined values
+    const templateData: any = {
       id: newActivity.id,
       teacherId: newActivity.teacherId,
       type: String(newActivity.type || ''),
       title: newActivity.title,
       config: newActivity.config,
-      questions: Array.isArray((newActivity as any).questions) ? (newActivity as any).questions : undefined,
-      options: Array.isArray((newActivity as any).options) ? (newActivity as any).options : undefined,
-      prompt: (newActivity as any).prompt,
-      groupSize: (newActivity as any).groupSize,
-    });
+    };
+
+    // Only add optional fields if they have defined values
+    if (Array.isArray((newActivity as any).questions)) {
+      templateData.questions = (newActivity as any).questions;
+    }
+    if (Array.isArray((newActivity as any).options)) {
+      templateData.options = (newActivity as any).options;
+    }
+    if ((newActivity as any).prompt !== undefined && (newActivity as any).prompt !== null) {
+      templateData.prompt = (newActivity as any).prompt;
+    }
+    if ((newActivity as any).groupSize !== undefined && (newActivity as any).groupSize !== null) {
+      templateData.groupSize = (newActivity as any).groupSize;
+    }
+
+    // Recursively remove undefined values from the object
+    const cleanData = JSON.parse(JSON.stringify(templateData));
+    
+    await dbService.createActivityTemplate(cleanData);
     
     router.push('/teacher');
   };
