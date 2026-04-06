@@ -5,10 +5,12 @@ import { SessionJoin, JoinedSession } from '@/components/student/StudentInterfac
 import ActivityParticipation, { type ActivityParticipationResponse } from '@/components/student/ActivityParticipation';
 import type { Activity, SessionStatus } from '@classroom/shared-utils';
 import { useSocket } from '@/hooks/useSocket';
+import { dbService } from '@/lib/database';
 
 interface StoredSession {
   id: string;
   code: string;
+  joinPassword?: string;
   templateId: string;
   title: string;
   status: string;
@@ -39,6 +41,24 @@ export default function StudentPage() {
   });
 
   const { isConnected } = useSocket(sessionState.sessionId, 'STUDENT');
+
+  const resolveSessionByCode = async (sessionCode: string): Promise<StoredSession | null> => {
+    const firebaseSession = await dbService.getSessionByCode(sessionCode);
+    if (firebaseSession) {
+      return {
+        id: firebaseSession.id,
+        code: firebaseSession.code,
+        joinPassword: firebaseSession.joinPassword,
+        templateId: 'firebase-template',
+        title: firebaseSession.title,
+        status: firebaseSession.status,
+        createdAt: firebaseSession.createdAt,
+      };
+    }
+
+    const sessions = JSON.parse(localStorage.getItem('classroom_sessions') || '[]') as StoredSession[];
+    return sessions.find((s) => s.code.toUpperCase() === sessionCode.toUpperCase()) || null;
+  };
 
   useEffect(() => {
     if (!sessionState.sessionId || typeof window === 'undefined') return;
@@ -166,27 +186,53 @@ export default function StudentPage() {
     return () => bc.close();
   }, [sessionState.sessionId]);
 
-  const handleJoinSession = async (sessionCode: string, studentName: string) => {
-    let session: StoredSession | null = null;
-    
-    // Try localStorage
-    const sessions = JSON.parse(localStorage.getItem('classroom_sessions') || '[]') as StoredSession[];
-    session = sessions.find((s) => s.code.toUpperCase() === sessionCode.toUpperCase()) || null;
-    
-    // Cross-origin mock fallback for the standard test session
+  const handleValidateSession = async (sessionCode: string, sessionPassword: string) => {
+    let session = await resolveSessionByCode(sessionCode);
+
     if (!session && sessionCode === '000000') {
       session = {
-        id: "session-sample-000000",
-        code: "000000",
-        templateId: "template-sample",
-        title: "Sample Session",
-        status: "SCHEDULED",
-        createdAt: new Date().toISOString()
+        id: 'session-sample-000000',
+        code: '000000',
+        joinPassword: '000000',
+        templateId: 'template-sample',
+        title: 'Sample Session',
+        status: 'SCHEDULED',
+        createdAt: new Date().toISOString(),
       };
     }
-    
+
     if (!session) {
-      throw new Error("Invalid session code or session not found.");
+      throw new Error('Invalid session code or session not found.');
+    }
+
+    const expectedPassword = session.joinPassword || '000000';
+    if (sessionPassword !== expectedPassword) {
+      throw new Error('Incorrect session password.');
+    }
+  };
+
+  const handleJoinSession = async (sessionCode: string, sessionPassword: string, studentName: string) => {
+    let session = await resolveSessionByCode(sessionCode);
+
+    if (!session && sessionCode === '000000') {
+      session = {
+        id: 'session-sample-000000',
+        code: '000000',
+        joinPassword: '000000',
+        templateId: 'template-sample',
+        title: 'Sample Session',
+        status: 'SCHEDULED',
+        createdAt: new Date().toISOString(),
+      };
+    }
+
+    if (!session) {
+      throw new Error('Invalid session code or session not found.');
+    }
+
+    const expectedPassword = session.joinPassword || '000000';
+    if (sessionPassword !== expectedPassword) {
+      throw new Error('Incorrect session password.');
     }
 
     const studentId = `stu-${Math.random().toString(36).substr(2, 6)}`;
@@ -250,7 +296,7 @@ export default function StudentPage() {
     : false;
 
   if (!sessionState.isJoined) {
-    return <SessionJoin onJoinSession={handleJoinSession} />;
+    return <SessionJoin onValidateSession={handleValidateSession} onJoinSession={handleJoinSession} />;
   }
 
   return (

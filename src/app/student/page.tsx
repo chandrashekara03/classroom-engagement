@@ -1,7 +1,5 @@
 "use client";
 
-import { useEffect } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent } from '@classroom/ui-components';
 import { Button } from '@classroom/ui-components';
@@ -9,36 +7,14 @@ import { LucideUsers, LucideBookOpen, LucideArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
 export default function StudentInterface() {
-  const { user, loading, userType } = useAuth();
   const router = useRouter();
-
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push('/student/login');
-    }
-  }, [user, loading, router]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-slate-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user || userType !== 'student') {
-    return null; // Will redirect in useEffect
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">Welcome, {user.displayName || user.email}</h1>
-          <p className="text-slate-600">Ready to join your classroom session?</p>
+          <h1 className="text-3xl font-bold text-slate-900 mb-2">Student Portal</h1>
+          <p className="text-slate-600">Join with session code and password</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
@@ -86,12 +62,12 @@ export default function StudentInterface() {
         </div>
 
         <div className="text-center mt-8">
-          <Link
-            href="/student/login"
+          <button
+            onClick={() => router.push('/student/join')}
             className="text-sm text-slate-600 hover:text-slate-700"
           >
-            Not {user.displayName}? Sign out and switch account →
-          </Link>
+            Go to session join screen →
+          </button>
         </div>
       </div>
     </div>

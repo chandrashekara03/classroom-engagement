@@ -1,39 +1,45 @@
 'use server';
 
-import { cookies } from 'next/headers';
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import * as admin from 'firebase-admin';
+import fs from 'node:fs';
+import path from 'node:path';
 
 /**
- * Creates an authenticated Supabase Server Client.
+ * Initializes Firebase Admin for server actions.
  */
-async function getSupabaseClient() {
-  const cookieStore = await cookies();
-  
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          try {
-            cookieStore.set({ name, value, ...options });
-          } catch (error) {
-            // Context is not available (e.g. from middleware)
-          }
-        },
-        remove(name: string, options: CookieOptions) {
-          try {
-            cookieStore.set({ name, value: '', ...options });
-          } catch (error) {
-             // Context is not available
-          }
-        },
-      },
+function resolveServiceAccountPath() {
+  const fromEnv = process.env.FIREBASE_SERVICE_ACCOUNT_PATH || process.env.GOOGLE_APPLICATION_CREDENTIALS;
+  if (fromEnv && fs.existsSync(fromEnv)) return fromEnv;
+
+  const cwd = process.cwd();
+  const candidate = fs
+    .readdirSync(cwd)
+    .find((file) => file.includes('firebase-adminsdk') && file.endsWith('.json'));
+
+  return candidate ? path.join(cwd, candidate) : null;
+}
+
+function getAdminDb() {
+  if (!admin.apps.length) {
+    const serviceAccountPath = resolveServiceAccountPath();
+    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'classroomengagement-2026';
+    const databaseURL =
+      process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL ||
+      `https://${projectId}-default-rtdb.firebaseio.com`;
+
+    if (serviceAccountPath) {
+      const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8')) as admin.ServiceAccount;
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+        databaseURL,
+        projectId: serviceAccount.projectId || projectId,
+      });
+    } else {
+      admin.initializeApp({ projectId, databaseURL });
     }
-  );
+  }
+
+  return admin.database();
 }
 
 /**
@@ -51,7 +57,7 @@ function generateJoinCode(): string {
 /**
  * Interfaces for responses
  */
-export type ActionResponse<T = any> = {
+export type ActionResponse<T = unknown> = {
   success: boolean;
   data?: T;
   error?: string;
@@ -66,60 +72,52 @@ export type ActionResponse<T = any> = {
  */
 export async function launchSession(templateId: string, classId?: string): Promise<ActionResponse> {
   try {
-    const supabase = await getSupabaseClient();
-    
-    // Verify user authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return { success: false, error: 'Authentication required to launch a session.' };
-    }
+    const db = getAdminDb();
+    const sessionsRef = db.ref('sessions');
 
-    let retries = 3;
-    let session = null;
-    let lastError: any = null;
+    let retries = 5;
+    let session: Record<string, unknown> | null = null;
 
-    // Retry loop to handle rare unique constraint collisions on join_code
     while (retries > 0) {
       const joinCode = generateJoinCode();
-      
-      const { data, error: insertError } = await supabase
-        .from('sessions')
-        .insert({
+      const snapshot = await sessionsRef.get();
+      const sessions = snapshot.exists() ? Object.values(snapshot.val()) as Array<Record<string, unknown>> : [];
+      const exists = sessions.some((s) => s.join_code === joinCode || s.code === joinCode);
+
+      if (!exists) {
+        const sessionRef = sessionsRef.push();
+        session = {
+          id: sessionRef.key,
           activity_template_id: templateId,
-          class_id: classId,
+          class_id: classId || null,
           join_code: joinCode,
+          code: joinCode,
           status: 'live',
-          started_at: new Date().toISOString()
-        })
-        .select()
-        .single();
-        
-      if (!insertError) {
-        session = data;
-        break; // Successfully inserted
+          started_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          participants: {},
+        };
+        await sessionRef.set(session);
+        break;
       }
-      
-      lastError = insertError;
-      
-      // PostgreSQL unique violation code is '23505'
-      if (insertError.code !== '23505') {
-        break; // Break on any other error
-      }
-      
+
       retries--;
     }
 
     if (!session) {
-      return { 
-        success: false, 
-        error: lastError?.message || 'Failed to generate a unique join code. Please try again.' 
+      return {
+        success: false,
+        error: 'Failed to generate a unique join code. Please try again.',
       };
     }
 
     return { success: true, data: session };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('SERVER ACTION ERROR: launchSession -', error);
-    return { success: false, error: error.message || 'An unexpected server error occurred.' };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'An unexpected server error occurred.',
+    };
   }
 }
 
@@ -130,7 +128,7 @@ export async function launchSession(templateId: string, classId?: string): Promi
  */
 export async function joinSessionWithCode(joinCode: string): Promise<ActionResponse<{ sessionId: string }>> {
   try {
-    const supabase = await getSupabaseClient();
+    const db = getAdminDb();
     const upperCode = joinCode.toUpperCase().trim();
     
     // Validate the input code format
@@ -138,48 +136,28 @@ export async function joinSessionWithCode(joinCode: string): Promise<ActionRespo
       return { success: false, error: 'Invalid join code format. Must be 6 alphanumeric characters.' };
     }
 
-    // 1. Get the current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return { success: false, error: 'Authentication required to join a session.' };
-    }
+    const sessionsSnapshot = await db.ref('sessions').get();
+    const sessions = sessionsSnapshot.exists() ? Object.values(sessionsSnapshot.val()) as Array<Record<string, unknown>> : [];
+    const session = sessions.find(
+      (s) => (s.join_code === upperCode || s.code === upperCode) && s.status === 'live'
+    );
 
-    // 2. Query for the living session matching the join code
-    const { data: session, error: sessionError } = await supabase
-      .from('sessions')
-      .select('id, status')
-      .eq('join_code', upperCode)
-      .eq('status', 'live')
-      .single();
-
-    if (sessionError || !session) {
+    if (!session || !session.id) {
       return { success: false, error: 'Session not found or is no longer live.' };
     }
 
-    // 3. Insert into session_participants
-    const { error: joinError } = await supabase
-      .from('session_participants')
-      .insert({
-         session_id: session.id,
-         student_id: user.id
-      });
-      
-    if (joinError) {
-      // 23505 is PostgreSQL unique constraint violation error code
-      // If the student is already in the session, we fail gracefully and return success so the client can route them
-      if (joinError.code === '23505') {
-        return { 
-            success: true, 
-            data: { sessionId: session.id }, 
-            message: 'You have already joined this session.' 
-        };
-      }
-      return { success: false, error: joinError.message };
-    }
+    const participantId = `stu-${Math.random().toString(36).slice(2, 8)}`;
+    await db.ref(`sessions/${session.id}/participants/${participantId}`).set({
+      id: participantId,
+      joined_at: new Date().toISOString(),
+    });
 
-    return { success: true, data: { sessionId: session.id } };
-  } catch (error: any) {
+    return { success: true, data: { sessionId: String(session.id) } };
+  } catch (error: unknown) {
     console.error('SERVER ACTION ERROR: joinSessionWithCode -', error);
-    return { success: false, error: error.message || 'An unexpected server error occurred.' };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'An unexpected server error occurred.',
+    };
   }
 }

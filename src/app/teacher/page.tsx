@@ -41,6 +41,7 @@ export function TeacherDashboard() {
             id: "session-sample-000000",
             teacherId: user.uid,
             code: "000000",
+            joinPassword: "000000",
             title: "Sample Checking Class",
             status: "SCHEDULED",
             createdAt: new Date().toISOString(),
@@ -78,12 +79,19 @@ export function TeacherDashboard() {
     if (!user) return;
 
     try {
+      const joinPassword = window.prompt('Set session password (minimum 4 chars):', '')?.trim() || '';
+      if (joinPassword.length < 4) {
+        alert('Session password must be at least 4 characters.');
+        return;
+      }
+
       // Generate a random 6 char code
       const code = Math.random().toString(36).substr(2, 6).toUpperCase();
       const newSession: Session = {
         id: `session-${Date.now()}`,
         teacherId: user.uid,
         code,
+        joinPassword,
         title: templates.find(t => t.id === templateId)?.title || 'New Session',
         status: "SCHEDULED",
         createdAt: new Date().toISOString(),

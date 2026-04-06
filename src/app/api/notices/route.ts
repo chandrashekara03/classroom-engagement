@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/requireAuth";
-import { supabaseAdmin } from "@/lib/supabase";
+import { adminDb } from "@/lib/firebaseAdmin";
 import { createNoticeSchema } from "@/lib/validations/notice.schema";
 import { z } from "zod";
 
@@ -9,20 +9,19 @@ export const POST = withAuth(async (req, ctx, session) => {
     try {
         const body = await req.json();
         const validatedData = createNoticeSchema.parse(body);
+        const now = new Date().toISOString();
+        const noticeRef = adminDb.ref("notices").push();
+        const notice = {
+            id: noticeRef.key,
+            title: validatedData.title,
+            content: validatedData.content,
+            is_important: validatedData.isImportant || false,
+            created_by: session.user.id,
+            created_at: now,
+            updated_at: now,
+        };
 
-        const { data: notice, error } = await supabaseAdmin
-            .from("notices")
-            .insert({
-                title: validatedData.title,
-                content: validatedData.content,
-                // Transforming JS camelCase to Postgres snake_case convention
-                is_important: validatedData.isImportant || false,
-                created_by: session.user.id,
-            })
-            .select()
-            .single();
-
-        if (error) throw error;
+        await noticeRef.set(notice);
 
         return NextResponse.json(notice, { status: 201 });
     } catch (error) {
@@ -36,17 +35,17 @@ export const POST = withAuth(async (req, ctx, session) => {
 
 // Residents and Admins can view notices
 export const GET = withAuth(async (req, ctx, session) => {
-    const { data: notices, error } = await supabaseAdmin
-        .from("notices")
-        // .select(`*, created_by(name)`)  
-        .select("*")
-        .order("is_important", { ascending: false })
-        .order("created_at", { ascending: false });
-
-    if (error) {
+    try {
+        const snapshot = await adminDb.ref("notices").get();
+        const notices = snapshot.exists() ? Object.values(snapshot.val()) as Record<string, unknown>[] : [];
+        notices.sort((a, b) => {
+            const importanceSort = Number(Boolean(b.is_important)) - Number(Boolean(a.is_important));
+            if (importanceSort !== 0) return importanceSort;
+            return String(b.created_at || "").localeCompare(String(a.created_at || ""));
+        });
+        return NextResponse.json(notices, { status: 200 });
+    } catch (error) {
         console.error("Notice GET error", error);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
-
-    return NextResponse.json(notices, { status: 200 });
 });

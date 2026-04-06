@@ -1,7 +1,7 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { adminAuth } from "@/lib/firebaseAdmin";
-import { supabaseAdmin } from "@/lib/supabase";
+import { adminDb } from "@/lib/firebaseAdmin";
 
 export const authOptions: NextAuthOptions = {
     providers: [
@@ -14,46 +14,40 @@ export const authOptions: NextAuthOptions = {
                 if (!credentials?.idToken) return null;
 
                 try {
-                    // 1. Verify the frontend Firebase token securely 
+                    // 1. Verify the frontend Firebase token securely
                     const decodedToken = await adminAuth.verifyIdToken(credentials.idToken);
-                    const { uid, email, name, picture } = decodedToken;
+                    const { uid, email, name } = decodedToken;
 
                     if (!email) return null;
 
-                    // 2. Query our Supabase `users` table to see if this Firebase User has a profile yet
-                    const { data: existingUser, error: selectError } = await supabaseAdmin
-                        .from('users')
-                        .select('*')
-                        .eq('firebase_uid', uid)
-                        .single();
+                    // 2. Check and sync user profile in Firebase Realtime Database
+                    const userRef = adminDb.ref(`users/${uid}`);
+                    const userSnapshot = await userRef.get();
 
-                    if (existingUser) {
-                        // Return user object formatted for the NextAuth session
+                    if (userSnapshot.exists()) {
+                        const existingUser = userSnapshot.val();
                         return {
-                            id: existingUser.id,           // The Supabase UUID (used for relations)
-                            firebase_uid: uid,             // The Firebase String ID
-                            email: existingUser.email,
-                            name: existingUser.name,
-                            role: existingUser.role,       // Extract Supabase 'admin' / 'resident' role
+                            id: uid,
+                            firebase_uid: uid,
+                            email: existingUser.email || email,
+                            name: existingUser.name || name || '',
+                            role: existingUser.role || 'resident',
                         };
                     }
 
-                    // 3. User doesn't exist in Supabase yet (First login). Auto-sync them!
-                    const { data: newUser, error: insertError } = await supabaseAdmin
-                        .from('users')
-                        .insert({
-                            firebase_uid: uid,
-                            email: email,
-                            name: name || '',
-                            role: 'resident', // Default role for new signups
-                        })
-                        .select()
-                        .single();
+                    const newUser = {
+                        id: uid,
+                        firebase_uid: uid,
+                        email,
+                        name: name || '',
+                        role: 'resident',
+                        createdAt: new Date().toISOString(),
+                    };
 
-                    if (insertError) throw insertError;
+                    await userRef.set(newUser);
 
                     return {
-                        id: newUser.id,
+                        id: uid,
                         firebase_uid: uid,
                         email: newUser.email,
                         name: newUser.name,
@@ -61,7 +55,7 @@ export const authOptions: NextAuthOptions = {
                     };
 
                 } catch (error) {
-                    console.error("Firebase to Supabase NextAuth Error: ", error);
+                    console.error("Firebase NextAuth Error: ", error);
                     return null;
                 }
             }
@@ -73,7 +67,7 @@ export const authOptions: NextAuthOptions = {
     callbacks: {
         async jwt({ token, user }) {
             if (user) {
-                token.id = user.id; // Supabase Postgres UUID
+                token.id = user.id;
                 token.firebase_uid = (user as any).firebase_uid;
                 token.role = (user as any).role;
             }

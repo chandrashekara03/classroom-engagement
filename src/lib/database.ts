@@ -26,6 +26,7 @@ export interface Session {
   teacherId: string;
   title: string;
   code: string;
+  joinPassword?: string;
   status: SessionStatus;
   createdAt: string;
   participants: { [key: string]: Student };
@@ -107,6 +108,26 @@ class FirebaseDatabaseService {
       const snapshot = await get(sessionRef);
       return snapshot.exists() ? snapshot.val() : null;
     } catch { return null; }
+  }
+
+  async getSessionByCode(code: string): Promise<Session | null> {
+    try {
+      const sessionsRef = ref(database!, 'sessions');
+      const snapshot = await get(sessionsRef);
+      if (!snapshot.exists()) return null;
+
+      const normalizedCode = code.toUpperCase();
+      let matched: Session | null = null;
+      snapshot.forEach((childSnapshot) => {
+        const session = childSnapshot.val() as Session;
+        if (!matched && session.code?.toUpperCase() === normalizedCode) {
+          matched = session;
+        }
+      });
+      return matched;
+    } catch {
+      return null;
+    }
   }
 
   async updateSessionStatus(sessionId: string, status: Session['status']): Promise<void> {

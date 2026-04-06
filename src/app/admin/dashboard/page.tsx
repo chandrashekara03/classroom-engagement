@@ -18,6 +18,16 @@ export default function AdminDashboard() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  const fetchWithTimeout = async (url: string, timeoutMs = 12000) => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      return await fetch(url, { signal: controller.signal });
+    } finally {
+      clearTimeout(timeout);
+    }
+  };
+
   // Form states
   const [teacherForm, setTeacherForm] = useState({
     email: '',
@@ -38,9 +48,10 @@ export default function AdminDashboard() {
   useEffect(() => {
     const isAdmin = typeof window !== 'undefined' && localStorage.getItem('admin_session') === 'true';
     if (!isAdmin) {
+      setLoading(false);
       router.push('/admin/login');
     } else {
-      loadData();
+      void loadData();
     }
   }, [router]);
 
@@ -48,21 +59,34 @@ export default function AdminDashboard() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [teachersRes, studentsRes] = await Promise.all([
-        fetch('/api/admin/teachers'),
-        fetch('/api/admin/students'),
+      const [teachersResult, studentsResult] = await Promise.allSettled([
+        fetchWithTimeout('/api/admin/teachers'),
+        fetchWithTimeout('/api/admin/students'),
       ]);
 
-      if (teachersRes.ok) {
-        const data = await teachersRes.json();
+      let hasAnySuccess = false;
+
+      if (teachersResult.status === 'fulfilled' && teachersResult.value.ok) {
+        const data = await teachersResult.value.json();
         setTeachers(data.teachers || []);
+        hasAnySuccess = true;
+      } else {
+        setTeachers([]);
       }
-      if (studentsRes.ok) {
-        const data = await studentsRes.json();
+
+      if (studentsResult.status === 'fulfilled' && studentsResult.value.ok) {
+        const data = await studentsResult.value.json();
         setStudents(data.students || []);
+        hasAnySuccess = true;
+      } else {
+        setStudents([]);
       }
-    } catch (err) {
-      setError('Failed to load data');
+
+      if (!hasAnySuccess) {
+        setError('Unable to load admin data. Please check server/API configuration and try again.');
+      }
+    } catch {
+      setError('Failed to load data. Please refresh and try again.');
     } finally {
       setLoading(false);
     }
@@ -197,7 +221,10 @@ export default function AdminDashboard() {
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 flex items-center gap-3">
             <AlertCircle size={20} className="shrink-0" />
-            {error}
+            <div className="flex-1">{error}</div>
+            <Button onClick={() => void loadData()} className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 text-sm">
+              Retry
+            </Button>
           </div>
         )}
         {success && (

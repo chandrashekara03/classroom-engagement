@@ -17,9 +17,7 @@ const eslintConfig = defineConfig([
     "node_modules/**",
     ".git/**",
     ".turbo/**",
-    ".supabase/**",
     "public/**",
-    "supabase/**",
     "apps/student-client/.next/**",
     // Environment and config:
     ".env",

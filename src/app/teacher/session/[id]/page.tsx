@@ -157,6 +157,9 @@ export default function SessionManager() {
             <span className="font-mono bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-100 italic">
               Code: {sessionData?.code || 'Loading...'}
             </span>
+            <span className="font-mono bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-100 italic">
+              Password: {sessionData?.joinPassword || '000000'}
+            </span>
             <SessionStatusIndicator status={status} />
           </div>
         </div>
