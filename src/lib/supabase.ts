@@ -6,4 +6,19 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 // because our API routes validate the user role and session before executing any queries.
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+const hasSupabaseConfig = Boolean(supabaseUrl && supabaseServiceKey);
+
+const missingConfigClient = new Proxy(
+	{},
+	{
+		get() {
+			throw new Error(
+				"Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in environment variables."
+			);
+		},
+	}
+);
+
+export const supabaseAdmin = hasSupabaseConfig
+	? createClient(supabaseUrl, supabaseServiceKey)
+	: (missingConfigClient as ReturnType<typeof createClient>);
