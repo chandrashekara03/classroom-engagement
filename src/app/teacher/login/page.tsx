@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, Input, Button } from '@classroom/ui-components';
 import { Activity, Lock, Mail, AlertCircle, LucideUserPlus, LucideArrowRight } from 'lucide-react';
 import Link from 'next/link';
@@ -17,33 +16,23 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   
   const router = useRouter();
-  const { isMocked } = useAuth();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
-    if (isMocked) {
-      // Mock login for faculty testing without Firebase API keys
-      setTimeout(() => {
-        if (email.includes('christuniversity.in') || email === 'admin') {
-          localStorage.setItem('mock_faculty_auth', 'true');
-          window.location.href = '/teacher';
-        } else {
-          setError('Please use a valid christuniversity.in faculty email or "admin".');
-          setIsLoading(false);
-        }
-      }, 800);
-      return;
-    }
-
     try {
       if (!auth) throw new Error("Auth system unavailable.");
+      const normalizedEmail = email.trim().toLowerCase();
+      if (!normalizedEmail.endsWith('christuniversity.in')) {
+        throw new Error('Please use your official christuniversity.in faculty email.');
+      }
+
       if (isSignUp) {
-        await createUserWithEmailAndPassword(auth, email, password);
+        await createUserWithEmailAndPassword(auth, normalizedEmail, password);
       } else {
-        await signInWithEmailAndPassword(auth, email, password);
+        await signInWithEmailAndPassword(auth, normalizedEmail, password);
       }
       router.push('/teacher');
     } catch (err: any) {
@@ -138,20 +127,8 @@ export default function LoginPage() {
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t border-slate-200" />
             </div>
-            <span className="relative px-2 bg-white text-xs text-slate-400 font-medium">FOR LOCAL TESTING</span>
+            <span className="relative px-2 bg-white text-xs text-slate-400 font-medium">FIREBASE AUTH</span>
           </div>
-
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => {
-              localStorage.setItem('mock_faculty_auth', 'true');
-              window.location.href = '/teacher';
-            }}
-            className="w-full text-slate-500 hover:bg-slate-50 text-xs font-semibold py-4"
-          >
-            Bypass Login (Local Admin)
-          </Button>
 
           <div className="mt-6 text-center">
             <button
@@ -165,11 +142,6 @@ export default function LoginPage() {
       </Card>
       
       <div className="mt-8 text-center space-y-4">
-        {isMocked && (
-          <p className="text-xs text-slate-400 max-w-xs mx-auto">
-            (Development Mode: Sign in with any *christuniversity.in* email or &apos;admin&apos; to bypass Firebase)
-          </p>
-        )}
         <div className="pt-4 border-t border-slate-100">
            <Link href="/student/login" className="text-sm text-slate-500 hover:text-slate-900 transition-colors">
              Are you a student? Use the Student Portal →

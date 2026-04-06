@@ -80,6 +80,16 @@ class FirebaseDatabaseService {
     await set(studentRef, new Date().toISOString());
   }
 
+  async deleteTeacher(uid: string): Promise<void> {
+    const teacherRef = ref(database!, `teachers/${uid}`);
+    await remove(teacherRef);
+  }
+
+  async deleteStudent(uid: string): Promise<void> {
+    const studentRef = ref(database!, `students/${uid}`);
+    await remove(studentRef);
+  }
+
   // Session operations
   async createSession(session: Omit<Session, 'createdAt' | 'participants'>): Promise<void> {
     const sessionRef = ref(database!, `sessions/${session.id}`);

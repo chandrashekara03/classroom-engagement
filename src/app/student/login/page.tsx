@@ -24,10 +24,15 @@ export default function StudentLoginPage() {
     setError('');
 
     try {
+      if (!auth) {
+        throw new Error('Auth system unavailable. Check Firebase configuration.');
+      }
+
+      const normalizedEmail = email.trim().toLowerCase();
       if (isSignUp) {
-        await createUserWithEmailAndPassword(auth!, email, password);
+        await createUserWithEmailAndPassword(auth, normalizedEmail, password);
       } else {
-        await signInWithEmailAndPassword(auth!, email, password);
+        await signInWithEmailAndPassword(auth, normalizedEmail, password);
       }
       router.push('/student');
     } catch (error: any) {
