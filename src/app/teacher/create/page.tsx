@@ -11,7 +11,7 @@ import { PollBuilder } from "@/components/teacher/activity-builder/PollBuilder";
 import { FeedbackBuilder } from "@/components/teacher/activity-builder/FeedbackBuilder";
 import { GroupingBuilder } from "@/components/teacher/activity-builder/GroupingBuilder";
 import { useAuth } from "@/contexts/AuthContext";
-import { dbService } from "@/lib/database";
+import { dbService, ActivityTemplate } from "@/lib/database";
 import { auth } from "@/lib/firebase";
 
 export default function CreateActivity() {
@@ -20,6 +20,7 @@ export default function CreateActivity() {
   const [type, setType] = useState<ActivityType | null>(null);
   const [title, setTitle] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState("");
 
   // Generic activity configuration payload
   const [activityData, setActivityData] = useState<Record<string, unknown>>({
@@ -40,8 +41,15 @@ export default function CreateActivity() {
   ];
 
   const handleSave = async () => {
+    setError("");
+
     if (!title) {
       alert("Please enter a title");
+      return;
+    }
+
+    if (!type) {
+      alert("Please choose an activity type.");
       return;
     }
 
@@ -49,6 +57,8 @@ export default function CreateActivity() {
       alert("You need to be logged in as faculty to save templates.");
       return;
     }
+
+    setIsSaving(true);
     
     const newActivity = {
       id: `act-${Date.now()}`,
@@ -85,40 +95,73 @@ export default function CreateActivity() {
 
     // Recursively remove undefined values from the object
     const cleanData = JSON.parse(JSON.stringify(templateData));
-    
+    let templateSaved = false;
+
     try {
-      await dbService.createActivityTemplate(cleanData);
-    } catch (error: any) {
-      const isPermissionDenied =
-        error?.code === 'PERMISSION_DENIED' ||
-        error?.code === 'database/permission-denied' ||
-        String(error?.message || '').toUpperCase().includes('PERMISSION_DENIED');
+      try {
+        await dbService.createActivityTemplate(cleanData);
+      } catch (error: any) {
+        const isPermissionDenied =
+          error?.code === 'PERMISSION_DENIED' ||
+          error?.code === 'database/permission-denied' ||
+          String(error?.message || '').toUpperCase().includes('PERMISSION_DENIED');
 
-      if (!isPermissionDenied) {
-        throw error;
+        if (!isPermissionDenied) {
+          throw error;
+        }
+
+        const idToken = await auth?.currentUser?.getIdToken();
+        if (!idToken) {
+          throw new Error('Authentication token unavailable. Please sign in again.');
+        }
+
+        const response = await fetch('/api/activity-templates', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify(cleanData),
+        });
+
+        if (!response.ok) {
+          const payload = await response.json().catch(() => ({}));
+          throw new Error(payload?.error || 'Failed to save template via server fallback.');
+        }
       }
 
-      const idToken = await auth?.currentUser?.getIdToken();
-      if (!idToken) {
-        throw new Error('Authentication token unavailable. Please sign in again.');
+      templateSaved = true;
+
+      const joinPassword = window.prompt('Set session password (minimum 4 chars):', '000000')?.trim() || '000000';
+      if (joinPassword.length < 4) {
+        throw new Error('Session password must be at least 4 characters.');
       }
 
-      const response = await fetch('/api/activity-templates', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${idToken}`,
-        },
-        body: JSON.stringify(cleanData),
+      const templateForLaunch: ActivityTemplate = {
+        ...cleanData,
+        createdAt: new Date().toISOString(),
+      };
+
+      const session = await dbService.createSessionFromTemplate({
+        teacherId: user.uid,
+        teacherEmail: user.email || undefined,
+        template: templateForLaunch,
+        joinPassword,
+        status: 'SCHEDULED',
       });
 
-      if (!response.ok) {
-        const payload = await response.json().catch(() => ({}));
-        throw new Error(payload?.error || 'Failed to save template via server fallback.');
+      router.push(`/teacher/session/${session.id}`);
+    } catch (err: any) {
+      const message = err?.message || 'Unable to save activity.';
+      if (templateSaved) {
+        setError(`Template saved, but session launch failed: ${message}`);
+        router.push('/teacher/activities');
+      } else {
+        setError(message);
       }
+    } finally {
+      setIsSaving(false);
     }
-
-    router.push('/teacher');
   };
 
   return (
@@ -239,6 +282,11 @@ export default function CreateActivity() {
               )}
               {isSaving ? 'Saving...' : 'Save Template'}
             </button>
+            {error && (
+              <div className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                {error}
+              </div>
+            )}
             <button onClick={() => setType(null)} className="w-full text-slate-500 hover:text-slate-700 text-sm hover:underline font-medium">
               Change Activity Type
             </button>

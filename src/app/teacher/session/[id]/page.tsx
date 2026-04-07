@@ -67,8 +67,8 @@ export default function SessionManager() {
       }
 
       if (currentSession.templateId) {
-        const foundTemplate = await dbService.getActivityTemplate(currentSession.templateId);
-        setTemplateData(foundTemplate);
+        const foundTemplate = await dbService.getActivityTemplate(currentSession.templateId, currentSession.teacherId);
+        setTemplateData(foundTemplate || (currentSession.templateSnapshot as ActivityTemplate) || null);
       }
 
       setSessionData(currentSession);

@@ -97,21 +97,21 @@ export function TeacherDashboard() {
         return;
       }
 
-      // Generate a random 6 char code
-      const code = Math.random().toString(36).substr(2, 6).toUpperCase();
-      const newSession: Omit<Session, 'createdAt' | 'participants'> = {
-        id: `session-${Date.now()}`,
+      const template = templates.find((t) => t.id === templateId);
+      if (!template) {
+        alert('Template not found. Please refresh and try again.');
+        return;
+      }
+
+      const newSession = await dbService.createSessionFromTemplate({
         teacherId: user.uid,
-        templateId,
-        code,
+        teacherEmail: user.email || undefined,
+        template,
         joinPassword,
-        title: templates.find(t => t.id === templateId)?.title || 'New Session',
-        status: "SCHEDULED",
-      };
+        status: 'SCHEDULED',
+      });
 
-      await dbService.createSession(newSession);
-      setActiveSessions((prev) => [...prev, { ...newSession, createdAt: new Date().toISOString(), participants: {} }]);
-
+      setActiveSessions((prev) => [...prev, newSession]);
       router.push(`/teacher/session/${newSession.id}`);
     } catch (error) {
       console.error('Error creating session:', error);
