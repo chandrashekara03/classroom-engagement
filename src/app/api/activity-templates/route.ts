@@ -50,6 +50,9 @@ export async function POST(req: Request) {
       createdAt: new Date().toISOString(),
     });
 
+    await adminDb.ref(`templates/${body.teacherId}/${body.id}`).set(templateData);
+
+    // Legacy mirror path for backward compatibility with older readers.
     await adminDb.ref(`activityTemplates/${body.id}`).set(templateData);
 
     return NextResponse.json({ success: true });

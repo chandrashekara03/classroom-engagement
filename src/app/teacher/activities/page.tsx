@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 interface ActivityTemplate {
   id: string;
+  teacherId: string;
   type: string;
   title: string;
   createdAt: string;
@@ -49,21 +50,21 @@ export default function ActivitiesPage() {
     const template = templates.find(t => t.id === templateId);
     if (!template) return;
 
-    const code = Math.random().toString(36).substr(2, 6).toUpperCase();
-    const newSession = {
-      id: `session-${Date.now()}`,
+    const joinPassword = window.prompt('Set session password (minimum 4 chars):', '000000')?.trim() || '000000';
+    if (joinPassword.length < 4) {
+      alert('Session password must be at least 4 characters.');
+      return;
+    }
+
+    const session = await dbService.createSessionFromTemplate({
       teacherId: user.uid,
       teacherEmail: user.email || undefined,
-      templateId,
-      type: template.type,
-      code,
-      title: template.title || `Session ${code}`,
-      status: "SCHEDULED" as const,
-      templateSnapshot: template, // Record the exact template at the time of launch
-    };
-    
-    await dbService.createSession(newSession);
-    router.push(`/teacher/session/${newSession.id}`);
+      template,
+      joinPassword,
+      status: 'SCHEDULED',
+    });
+
+    router.push(`/teacher/session/${session.id}`);
   };
 
   const filteredTemplates = templates.filter(t => {

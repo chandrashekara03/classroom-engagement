@@ -295,15 +295,70 @@ class FirebaseDatabaseService {
     try {
       const snapshot = await get(ref(db, 'sessions'));
       if (!snapshot.exists()) return null;
+      const target = code.trim().toUpperCase();
       let found: Session | null = null;
       snapshot.forEach((child) => {
         const s = child.val() as Session;
-        if (s.code.toUpperCase() === code.toUpperCase()) {
+        if (String(s.code || '').trim().toUpperCase() === target) {
           found = s;
         }
       });
       return found;
     } catch { return null; }
+  }
+
+  private generateJoinCode(): string {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    for (let i = 0; i < 6; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  }
+
+  async createSessionFromTemplate(input: {
+    teacherId: string;
+    teacherEmail?: string;
+    template: ActivityTemplate;
+    joinPassword?: string;
+    status?: SessionStatus;
+  }): Promise<Session> {
+    const { teacherId, teacherEmail, template, joinPassword, status } = input;
+    const normalizedPassword = (joinPassword || '000000').trim();
+
+    let code = this.generateJoinCode();
+    let retry = 12;
+    while (retry > 0) {
+      const existing = await this.getSessionByCode(code);
+      if (!existing) break;
+      code = this.generateJoinCode();
+      retry -= 1;
+    }
+
+    if (retry <= 0) {
+      throw new Error('Unable to generate a unique session code. Please try again.');
+    }
+
+    const sessionBase: Omit<Session, 'createdAt' | 'participants'> = {
+      id: `session-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      teacherId,
+      teacherEmail,
+      templateId: template.id,
+      type: template.type,
+      title: template.title,
+      code,
+      joinPassword: normalizedPassword,
+      status: status || 'SCHEDULED',
+      templateSnapshot: template,
+    };
+
+    await this.createSession(sessionBase);
+
+    return {
+      ...sessionBase,
+      createdAt: new Date().toISOString(),
+      participants: {},
+    };
   }
 
   async updateSessionStatus(sessionId: string, status: SessionStatus, extra?: { startedAt?: string; endedAt?: string }): Promise<void> {
@@ -414,7 +469,16 @@ class FirebaseDatabaseService {
       ...template,
       createdAt: new Date().toISOString(),
     }));
-    await set(ref(db, `activityTemplates/${template.id}`), data);
+
+    // Primary storage path aligned with Firebase database.rules.json
+    await set(ref(db, `templates/${template.teacherId}/${template.id}`), data);
+
+    // Best-effort legacy write for backward compatibility with older data snapshots.
+    try {
+      await set(ref(db, `activityTemplates/${template.id}`), data);
+    } catch {
+      // Ignore legacy path failures (commonly caused by stricter rules).
+    }
   }
 
   async createActivityTemplate(template: Omit<ActivityTemplate, 'createdAt'>): Promise<void> {
@@ -424,20 +488,47 @@ class FirebaseDatabaseService {
   async getTemplatesByTeacher(teacherId: string): Promise<ActivityTemplate[]> {
     const db = assertDb();
     try {
-      const snapshot = await get(ref(db, 'activityTemplates'));
-      if (!snapshot.exists()) return [];
-      const templates: ActivityTemplate[] = [];
-      snapshot.forEach((child) => {
-        const t = child.val() as ActivityTemplate;
-        if (t.teacherId === teacherId) templates.push(t);
-      });
-      return templates.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      const templatesById = new Map<string, ActivityTemplate>();
+
+      const scopedSnapshot = await get(ref(db, `templates/${teacherId}`));
+      if (scopedSnapshot.exists()) {
+        scopedSnapshot.forEach((child) => {
+          const t = child.val() as ActivityTemplate;
+          if (t?.id) {
+            templatesById.set(t.id, t);
+          }
+        });
+      }
+
+      // Best-effort legacy read.
+      try {
+        const legacySnapshot = await get(ref(db, 'activityTemplates'));
+        if (legacySnapshot.exists()) {
+          legacySnapshot.forEach((child) => {
+            const t = child.val() as ActivityTemplate;
+            if (t?.teacherId === teacherId && t?.id && !templatesById.has(t.id)) {
+              templatesById.set(t.id, t);
+            }
+          });
+        }
+      } catch {
+        // Ignore if legacy node is not readable under current rules.
+      }
+
+      return Array.from(templatesById.values()).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     } catch { return []; }
   }
 
-  async getTemplate(templateId: string): Promise<ActivityTemplate | null> {
+  async getTemplate(templateId: string, teacherId?: string): Promise<ActivityTemplate | null> {
     const db = assertDb();
     try {
+      if (teacherId) {
+        const scopedSnapshot = await get(ref(db, `templates/${teacherId}/${templateId}`));
+        if (scopedSnapshot.exists()) {
+          return scopedSnapshot.val();
+        }
+      }
+
       const snapshot = await get(ref(db, `activityTemplates/${templateId}`));
       return snapshot.exists() ? snapshot.val() : null;
     } catch { return null; }
@@ -445,14 +536,19 @@ class FirebaseDatabaseService {
 
   async deleteTemplate(teacherId: string, templateId: string): Promise<void> {
     const db = assertDb();
-    const template = await this.getTemplate(templateId);
+    const template = await this.getTemplate(templateId, teacherId);
     if (template && template.teacherId === teacherId) {
-      await remove(ref(db, `activityTemplates/${templateId}`));
+      await remove(ref(db, `templates/${teacherId}/${templateId}`));
+      try {
+        await remove(ref(db, `activityTemplates/${templateId}`));
+      } catch {
+        // Ignore legacy cleanup failures.
+      }
     }
   }
 
-  async getActivityTemplate(templateId: string): Promise<ActivityTemplate | null> {
-    return this.getTemplate(templateId);
+  async getActivityTemplate(templateId: string, teacherId?: string): Promise<ActivityTemplate | null> {
+    return this.getTemplate(templateId, teacherId);
   }
 }
 

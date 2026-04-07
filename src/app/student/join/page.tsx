@@ -99,6 +99,10 @@ export default function StudentPage() {
       throw new Error('Invalid session code or session not found.');
     }
 
+    if (!['SCHEDULED', 'LIVE', 'PAIRING'].includes(String(session.status || '').toUpperCase())) {
+      throw new Error('This session is no longer joinable.');
+    }
+
     const expectedPassword = String(session.joinPassword || '000000').trim();
     if (sessionPassword.trim() !== expectedPassword) {
       throw new Error('Incorrect session password.');
