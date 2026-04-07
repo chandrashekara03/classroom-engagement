@@ -46,12 +46,12 @@ export function TeacherDashboard() {
         setTemplates(savedTemplates);
 
         // Inject sample test class if not exists
-        if (!sessions.find((s) => s.code === '000000')) {
+        if (!sessions.find((s) => s.code === '000001')) {
           const sampleSession: Session = {
-            id: "session-sample-000000",
+            id: "session-sample-000001",
             teacherId: user.uid,
-            code: "000000",
-            joinPassword: "000000",
+            code: "000001",
+            joinPassword: "000001",
             templateId: "sample-template",
             title: "Sample Checking Class",
             status: "SCHEDULED",
