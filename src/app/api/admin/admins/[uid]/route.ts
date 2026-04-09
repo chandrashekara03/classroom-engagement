@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/adminApiAuth';
 import { adminAuth, adminDb } from '@/lib/firebaseAdmin';
+import { recordRoleAudit } from '@/lib/adminRoleManagement';
 
 type UserRole = 'admin' | 'teacher' | 'student';
 
@@ -92,6 +93,16 @@ export async function DELETE(
       adminAuth.setCustomUserClaims(uid, {
         ...(authUser.customClaims || {}),
         role: fallbackRole,
+      }),
+      recordRoleAudit({
+        targetUid: uid,
+        targetEmail: resolvedEmail,
+        targetDisplayName: resolvedDisplayName,
+        fromRole: 'admin',
+        toRole: fallbackRole,
+        changedByUid: adminCheck.admin.uid,
+        changedByEmail: adminCheck.admin.email,
+        reason: 'Removed admin access from admin dashboard',
       }),
     ]);
 

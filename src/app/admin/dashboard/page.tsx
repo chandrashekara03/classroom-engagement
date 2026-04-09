@@ -1,6 +1,6 @@
 'use client';
 
-import { ComponentType, FormEvent, useCallback, useEffect, useState } from 'react';
+import { ComponentType, FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signOut as firebaseSignOut } from 'firebase/auth';
 import { Card, CardHeader, CardTitle, CardContent } from '@classroom/ui-components';
@@ -17,9 +17,17 @@ import {
   ShieldCheck,
   UserCog,
   Layers,
+  History,
+  ArrowRightLeft,
 } from 'lucide-react';
 import type { Teacher, Student } from '@/lib/database';
 import { auth } from '@/lib/firebase';
+import {
+  createDefaultRoleOptions,
+  type ManagedRole,
+  type RoleAuditRecord,
+  type RoleOptionsConfig,
+} from '@/lib/roleOptions';
 
 type AdminProfile = {
   uid: string;
@@ -31,7 +39,9 @@ type AdminProfile = {
 
 type AdminTab = 'overview' | 'teachers' | 'students' | 'admins' | 'roles';
 
-type CreateForm = 'teacher' | 'student' | 'admin' | 'teacherRole' | null;
+type CreateForm = 'teacher' | 'student' | 'admin' | 'roleAssignment' | null;
+
+const DEFAULT_ROLE_OPTIONS = createDefaultRoleOptions();
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : '';
@@ -41,11 +51,42 @@ function isAdminAuthRequired(error: unknown): boolean {
   return getErrorMessage(error) === 'ADMIN_AUTH_REQUIRED';
 }
 
+function isRoleOptionsConfig(value: unknown): value is RoleOptionsConfig {
+  if (!value || typeof value !== 'object') return false;
+  const candidate = value as Partial<RoleOptionsConfig>;
+  return Array.isArray(candidate.roles) && Array.isArray(candidate.departments);
+}
+
+function isRoleAuditRecord(value: unknown): value is RoleAuditRecord {
+  if (!value || typeof value !== 'object') return false;
+  const candidate = value as Partial<RoleAuditRecord>;
+  return (
+    typeof candidate.id === 'string' &&
+    typeof candidate.targetUid === 'string' &&
+    typeof candidate.targetEmail === 'string' &&
+    typeof candidate.targetDisplayName === 'string' &&
+    typeof candidate.fromRole === 'string' &&
+    typeof candidate.toRole === 'string' &&
+    typeof candidate.changedByUid === 'string' &&
+    typeof candidate.changedByEmail === 'string' &&
+    typeof candidate.changedAt === 'string'
+  );
+}
+
+function roleLabel(role: ManagedRole | 'none'): string {
+  if (role === 'admin') return 'Admin';
+  if (role === 'teacher') return 'Teacher';
+  if (role === 'student') return 'Student';
+  return 'None';
+}
+
 export default function AdminDashboard() {
   const router = useRouter();
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [admins, setAdmins] = useState<AdminProfile[]>([]);
+  const [roleOptions, setRoleOptions] = useState<RoleOptionsConfig>(DEFAULT_ROLE_OPTIONS);
+  const [roleAudit, setRoleAudit] = useState<RoleAuditRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [showCreateForm, setShowCreateForm] = useState<CreateForm>(null);
@@ -136,6 +177,22 @@ export default function AdminDashboard() {
     return date.toLocaleString();
   };
 
+  const departmentLabels = useMemo(() => {
+    return roleOptions.departments.length > 0
+      ? roleOptions.departments.map((department) => department.label)
+      : DEFAULT_ROLE_OPTIONS.departments.map((department) => department.label);
+  }, [roleOptions.departments]);
+
+  const enabledRoleOptions = useMemo(() => {
+    const options = roleOptions.roles.filter((roleOption) => roleOption.enabled);
+    return options.length > 0 ? options : DEFAULT_ROLE_OPTIONS.roles;
+  }, [roleOptions.roles]);
+
+  const roleOptionDescription = (role: ManagedRole): string => {
+    const current = enabledRoleOptions.find((option) => option.value === role);
+    return current?.description || `Assign ${roleLabel(role)} role`;
+  };
+
   // Form states
   const [teacherForm, setTeacherForm] = useState({
     email: '',
@@ -153,28 +210,38 @@ export default function AdminDashboard() {
   });
 
   const [adminForm, setAdminForm] = useState({
+    uid: '',
     email: '',
     password: '',
     displayName: '',
   });
 
-  const [teacherRoleForm, setTeacherRoleForm] = useState({
+  const [roleAssignmentForm, setRoleAssignmentForm] = useState({
     uid: '',
     email: '',
     displayName: '',
     password: '',
+    studentId: '',
     department: 'Computer Science',
+    targetRole: 'teacher' as ManagedRole,
   });
 
-  // Load admin data for all dashboard tabs.
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
 
-      const [teachersResult, studentsResult, adminsResult] = await Promise.allSettled([
+      const [
+        teachersResult,
+        studentsResult,
+        adminsResult,
+        roleOptionsResult,
+        roleAuditResult,
+      ] = await Promise.allSettled([
         fetchAdmin('/api/admin/teachers'),
         fetchAdmin('/api/admin/students'),
         fetchAdmin('/api/admin/admins'),
+        fetchAdmin('/api/admin/roles/options'),
+        fetchAdmin('/api/admin/roles/audit?limit=40'),
       ]);
 
       let hasAnySuccess = false;
@@ -201,6 +268,26 @@ export default function AdminDashboard() {
         hasAnySuccess = true;
       } else {
         setAdmins([]);
+      }
+
+      if (roleOptionsResult.status === 'fulfilled' && roleOptionsResult.value.ok) {
+        const data = await roleOptionsResult.value.json();
+        if (isRoleOptionsConfig(data?.options)) {
+          setRoleOptions(data.options);
+          hasAnySuccess = true;
+        }
+      }
+
+      if (roleAuditResult.status === 'fulfilled' && roleAuditResult.value.ok) {
+        const data = await roleAuditResult.value.json();
+        if (Array.isArray(data?.audits)) {
+          setRoleAudit(data.audits.filter(isRoleAuditRecord));
+          hasAnySuccess = true;
+        } else {
+          setRoleAudit([]);
+        }
+      } else {
+        setRoleAudit([]);
       }
 
       if (!hasAnySuccess) {
@@ -268,7 +355,12 @@ export default function AdminDashboard() {
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
         setSuccess(`Teacher "${teacherForm.displayName}" created successfully!`);
-        setTeacherForm({ email: '', password: '', displayName: '', department: 'Computer Science' });
+        setTeacherForm({
+          email: '',
+          password: '',
+          displayName: '',
+          department: departmentLabels[0] || 'Computer Science',
+        });
         setShowCreateForm(null);
         await loadData();
       } else {
@@ -297,7 +389,13 @@ export default function AdminDashboard() {
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
         setSuccess(`Student "${studentForm.displayName}" created successfully!`);
-        setStudentForm({ email: '', password: '', displayName: '', studentId: '', department: 'Computer Science' });
+        setStudentForm({
+          email: '',
+          password: '',
+          displayName: '',
+          studentId: '',
+          department: departmentLabels[0] || 'Computer Science',
+        });
         setShowCreateForm(null);
         await loadData();
       } else {
@@ -310,11 +408,17 @@ export default function AdminDashboard() {
     }
   };
 
-  // Create admin
+  // Create or promote admin
   const handleCreateAdmin = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
+
+    const hasUidOrEmail = adminForm.uid.trim().length > 0 || adminForm.email.trim().length > 0;
+    if (!hasUidOrEmail) {
+      setError('Provide at least a UID or email to create/promote an admin.');
+      return;
+    }
 
     try {
       const res = await fetchAdmin('/api/admin/admins', {
@@ -325,8 +429,9 @@ export default function AdminDashboard() {
 
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
-        setSuccess(`Admin "${adminForm.displayName || adminForm.email}" created successfully!`);
-        setAdminForm({ email: '', password: '', displayName: '' });
+        const target = adminForm.uid || adminForm.email || adminForm.displayName;
+        setSuccess(`Admin role assigned successfully for ${target}.`);
+        setAdminForm({ uid: '', email: '', password: '', displayName: '' });
         setShowCreateForm(null);
         await loadData();
       } else {
@@ -339,45 +444,55 @@ export default function AdminDashboard() {
     }
   };
 
-  // Assign teacher role
-  const handleAssignTeacherRole = async (e: FormEvent) => {
+  // Assign any enabled role
+  const handleAssignRole = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
 
     const hasUidOrEmail =
-      teacherRoleForm.uid.trim().length > 0 || teacherRoleForm.email.trim().length > 0;
+      roleAssignmentForm.uid.trim().length > 0 || roleAssignmentForm.email.trim().length > 0;
     if (!hasUidOrEmail) {
-      setError('Provide at least a UID or an email to assign a teacher role.');
+      setError('Provide at least a UID or an email to assign role.');
       return;
     }
 
+    const endpointByRole: Record<ManagedRole, string> = {
+      admin: '/api/admin/admins',
+      teacher: '/api/admin/roles/teachers',
+      student: '/api/admin/roles/students',
+    };
+
+    const endpoint = endpointByRole[roleAssignmentForm.targetRole];
+
     try {
-      const res = await fetchAdmin('/api/admin/roles/teachers', {
+      const res = await fetchAdmin(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(teacherRoleForm),
+        body: JSON.stringify(roleAssignmentForm),
       });
 
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
-        const target = teacherRoleForm.uid || teacherRoleForm.email;
-        setSuccess(`Teacher role assigned successfully for ${target}.`);
-        setTeacherRoleForm({
+        const target = roleAssignmentForm.uid || roleAssignmentForm.email;
+        setSuccess(`Role updated to ${roleLabel(roleAssignmentForm.targetRole)} for ${target}.`);
+        setRoleAssignmentForm({
           uid: '',
           email: '',
           displayName: '',
           password: '',
-          department: 'Computer Science',
+          studentId: '',
+          department: departmentLabels[0] || 'Computer Science',
+          targetRole: roleAssignmentForm.targetRole,
         });
         setShowCreateForm(null);
         await loadData();
       } else {
-        setError(String(data?.error || 'Failed to assign teacher role'));
+        setError(String(data?.error || 'Failed to assign role'));
       }
     } catch (err: unknown) {
       if (!isAdminAuthRequired(err)) {
-        setError('Error assigning teacher role');
+        setError('Error assigning role');
       }
     }
   };
@@ -487,7 +602,7 @@ export default function AdminDashboard() {
         <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">Admin Control Center</h1>
-            <p className="text-sm text-slate-700">Create admins, assign teacher roles, and manage users in one place.</p>
+            <p className="text-sm text-slate-700">Create admins, assign roles, and manage users in one place.</p>
           </div>
 
           <div className="flex items-center gap-3">
@@ -617,11 +732,11 @@ export default function AdminDashboard() {
                 <Button
                   onClick={() => {
                     setActiveTab('roles');
-                    setShowCreateForm('teacherRole');
+                    setShowCreateForm('roleAssignment');
                   }}
                   className="border border-white/45 bg-gradient-to-r from-indigo-600 to-blue-700 text-white hover:from-indigo-500 hover:to-blue-600"
                 >
-                  Assign Teacher Role
+                  Assign Role
                 </Button>
               </CardContent>
             </Card>
@@ -671,13 +786,18 @@ export default function AdminDashboard() {
                         required
                         className="border-white/50 bg-white/55 text-slate-900 placeholder:text-slate-500"
                       />
-                      <Input
-                        type="text"
-                        placeholder="Department"
+                      <select
+                        aria-label="Teacher department"
                         value={teacherForm.department}
                         onChange={(e) => setTeacherForm({ ...teacherForm, department: e.target.value })}
-                        className="border-white/50 bg-white/55 text-slate-900 placeholder:text-slate-500"
-                      />
+                        className="h-11 rounded-md border border-white/50 bg-white/55 px-3 text-sm text-slate-900"
+                      >
+                        {departmentLabels.map((department) => (
+                          <option key={department} value={department}>
+                            {department}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     <Button type="submit" className="w-full border border-white/50 bg-gradient-to-r from-emerald-600 to-teal-700 text-white hover:from-emerald-500 hover:to-teal-600">
                       Create Teacher
@@ -765,6 +885,18 @@ export default function AdminDashboard() {
                         onChange={(e) => setStudentForm({ ...studentForm, studentId: e.target.value })}
                         className="border-white/50 bg-white/55 text-slate-900 placeholder:text-slate-500"
                       />
+                      <select
+                        aria-label="Student department"
+                        value={studentForm.department}
+                        onChange={(e) => setStudentForm({ ...studentForm, department: e.target.value })}
+                        className="md:col-span-2 h-11 rounded-md border border-white/50 bg-white/55 px-3 text-sm text-slate-900"
+                      >
+                        {departmentLabels.map((department) => (
+                          <option key={department} value={department}>
+                            {department}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     <Button type="submit" className="w-full border border-white/50 bg-gradient-to-r from-emerald-600 to-teal-700 text-white hover:from-emerald-500 hover:to-teal-600">
                       Create Student
@@ -785,7 +917,7 @@ export default function AdminDashboard() {
                         <p className="font-semibold text-slate-900">{student.displayName}</p>
                         <p className="text-sm text-slate-700">{student.email}</p>
                         <p className="mt-1 text-xs text-slate-600">
-                          ID: {student.studentId || 'N/A'} | Created: {new Date(student.createdAt).toLocaleDateString()}
+                          ID: {student.studentId || 'N/A'} | Department: {student.department || 'N/A'} | Created: {new Date(student.createdAt).toLocaleDateString()}
                         </p>
                       </div>
                       <Button
@@ -819,17 +951,16 @@ export default function AdminDashboard() {
             {showCreateForm === 'admin' && (
               <Card className="glass-surface border-white/55 bg-white/20">
                 <CardHeader className="border-b border-white/35 bg-white/15 pb-4">
-                  <CardTitle className="text-slate-900">Create New Admin Account</CardTitle>
+                  <CardTitle className="text-slate-900">Create or Promote Admin Account</CardTitle>
                 </CardHeader>
                 <CardContent className="p-6">
                   <form onSubmit={handleCreateAdmin} className="space-y-4">
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       <Input
                         type="text"
-                        placeholder="Display name"
-                        value={adminForm.displayName}
-                        onChange={(e) => setAdminForm({ ...adminForm, displayName: e.target.value })}
-                        required
+                        placeholder="UID (optional if email is provided)"
+                        value={adminForm.uid}
+                        onChange={(e) => setAdminForm({ ...adminForm, uid: e.target.value })}
                         className="border-white/50 bg-white/55 text-slate-900 placeholder:text-slate-500"
                       />
                       <Input
@@ -837,20 +968,25 @@ export default function AdminDashboard() {
                         placeholder="Admin email"
                         value={adminForm.email}
                         onChange={(e) => setAdminForm({ ...adminForm, email: e.target.value })}
-                        required
+                        className="border-white/50 bg-white/55 text-slate-900 placeholder:text-slate-500"
+                      />
+                      <Input
+                        type="text"
+                        placeholder="Display name (required for new accounts)"
+                        value={adminForm.displayName}
+                        onChange={(e) => setAdminForm({ ...adminForm, displayName: e.target.value })}
                         className="border-white/50 bg-white/55 text-slate-900 placeholder:text-slate-500"
                       />
                       <Input
                         type="password"
-                        placeholder="Password (min 6 characters)"
+                        placeholder="Password (required for new accounts)"
                         value={adminForm.password}
                         onChange={(e) => setAdminForm({ ...adminForm, password: e.target.value })}
-                        required
                         className="border-white/50 bg-white/55 text-slate-900 placeholder:text-slate-500"
                       />
                     </div>
                     <Button type="submit" className="w-full border border-white/50 bg-gradient-to-r from-sky-600 to-cyan-700 text-white hover:from-sky-500 hover:to-cyan-600">
-                      Create Admin
+                      Create or Promote Admin
                     </Button>
                   </form>
                 </CardContent>
@@ -895,77 +1031,164 @@ export default function AdminDashboard() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="text-xl font-bold text-slate-900">Role Assignment</h2>
               <Button
-                onClick={() => setShowCreateForm(showCreateForm === 'teacherRole' ? null : 'teacherRole')}
+                onClick={() => setShowCreateForm(showCreateForm === 'roleAssignment' ? null : 'roleAssignment')}
                 className="flex items-center gap-2 border border-white/45 bg-white/40 text-slate-800 hover:bg-white/60"
               >
-                <UserCog size={18} />
-                {showCreateForm === 'teacherRole' ? 'Cancel' : 'Assign Teacher Role'}
+                <ArrowRightLeft size={18} />
+                {showCreateForm === 'roleAssignment' ? 'Cancel' : 'Assign Role'}
               </Button>
             </div>
 
-            {showCreateForm === 'teacherRole' && (
+            {showCreateForm === 'roleAssignment' && (
               <Card className="glass-surface border-white/55 bg-white/20">
                 <CardHeader className="border-b border-white/35 bg-white/15 pb-4">
-                  <CardTitle className="text-slate-900">Assign Teacher Role</CardTitle>
+                  <CardTitle className="text-slate-900">Assign Role (Options from Firebase)</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4 p-6">
-                  <form onSubmit={handleAssignTeacherRole} className="space-y-4">
+                  <form onSubmit={handleAssignRole} className="space-y-4">
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <select
+                        aria-label="Target role"
+                        value={roleAssignmentForm.targetRole}
+                        onChange={(e) =>
+                          setRoleAssignmentForm({
+                            ...roleAssignmentForm,
+                            targetRole: e.target.value as ManagedRole,
+                          })
+                        }
+                        className="h-11 rounded-md border border-white/50 bg-white/55 px-3 text-sm text-slate-900"
+                      >
+                        {enabledRoleOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+
                       <Input
                         type="text"
                         placeholder="UID (optional if email is provided)"
-                        value={teacherRoleForm.uid}
-                        onChange={(e) => setTeacherRoleForm({ ...teacherRoleForm, uid: e.target.value })}
+                        value={roleAssignmentForm.uid}
+                        onChange={(e) => setRoleAssignmentForm({ ...roleAssignmentForm, uid: e.target.value })}
                         className="border-white/50 bg-white/55 text-slate-900 placeholder:text-slate-500"
                       />
+
                       <Input
                         type="email"
                         placeholder="Email (optional if UID is provided)"
-                        value={teacherRoleForm.email}
-                        onChange={(e) => setTeacherRoleForm({ ...teacherRoleForm, email: e.target.value })}
+                        value={roleAssignmentForm.email}
+                        onChange={(e) => setRoleAssignmentForm({ ...roleAssignmentForm, email: e.target.value })}
                         className="border-white/50 bg-white/55 text-slate-900 placeholder:text-slate-500"
                       />
+
                       <Input
                         type="text"
-                        placeholder="Display name (required for new account)"
-                        value={teacherRoleForm.displayName}
-                        onChange={(e) => setTeacherRoleForm({ ...teacherRoleForm, displayName: e.target.value })}
+                        placeholder="Display name (required for new accounts)"
+                        value={roleAssignmentForm.displayName}
+                        onChange={(e) =>
+                          setRoleAssignmentForm({ ...roleAssignmentForm, displayName: e.target.value })
+                        }
                         className="border-white/50 bg-white/55 text-slate-900 placeholder:text-slate-500"
                       />
+
                       <Input
                         type="password"
-                        placeholder="Password (required for new account)"
-                        value={teacherRoleForm.password}
-                        onChange={(e) => setTeacherRoleForm({ ...teacherRoleForm, password: e.target.value })}
+                        placeholder="Password (required for new accounts)"
+                        value={roleAssignmentForm.password}
+                        onChange={(e) =>
+                          setRoleAssignmentForm({ ...roleAssignmentForm, password: e.target.value })
+                        }
                         className="border-white/50 bg-white/55 text-slate-900 placeholder:text-slate-500"
                       />
-                      <Input
-                        type="text"
-                        placeholder="Department"
-                        value={teacherRoleForm.department}
-                        onChange={(e) => setTeacherRoleForm({ ...teacherRoleForm, department: e.target.value })}
-                        className="md:col-span-2 border-white/50 bg-white/55 text-slate-900 placeholder:text-slate-500"
-                      />
+
+                      {(roleAssignmentForm.targetRole === 'teacher' ||
+                        roleAssignmentForm.targetRole === 'student') && (
+                        <select
+                          aria-label="Role assignment department"
+                          value={roleAssignmentForm.department}
+                          onChange={(e) =>
+                            setRoleAssignmentForm({ ...roleAssignmentForm, department: e.target.value })
+                          }
+                          className="h-11 rounded-md border border-white/50 bg-white/55 px-3 text-sm text-slate-900"
+                        >
+                          {departmentLabels.map((department) => (
+                            <option key={department} value={department}>
+                              {department}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+
+                      {roleAssignmentForm.targetRole === 'student' && (
+                        <Input
+                          type="text"
+                          placeholder="Student ID (optional)"
+                          value={roleAssignmentForm.studentId}
+                          onChange={(e) =>
+                            setRoleAssignmentForm({ ...roleAssignmentForm, studentId: e.target.value })
+                          }
+                          className="border-white/50 bg-white/55 text-slate-900 placeholder:text-slate-500"
+                        />
+                      )}
                     </div>
+
                     <Button type="submit" className="w-full border border-white/50 bg-gradient-to-r from-indigo-600 to-blue-700 text-white hover:from-indigo-500 hover:to-blue-600">
-                      Assign Teacher Role
+                      Assign {roleLabel(roleAssignmentForm.targetRole)} Role
                     </Button>
                   </form>
 
                   <div className="glass-muted rounded-xl p-4 text-sm text-slate-700">
-                    Use UID or email to promote an existing account to teacher. If the account does not exist,
-                    provide email, display name, and password to create it directly as teacher.
+                    {roleOptionDescription(roleAssignmentForm.targetRole)}
                   </div>
                 </CardContent>
               </Card>
             )}
 
-            <Card className="glass-muted border-white/50">
-              <CardContent className="p-5">
-                <p className="text-sm text-slate-700">
-                  Role changes update Firebase Auth claims and the Realtime Database user profile in sync.
-                  This ensures teacher dashboards and protected APIs recognize the new role immediately.
-                </p>
+            <Card className="glass-surface border-white/55 bg-white/18">
+              <CardHeader className="border-b border-white/35 bg-white/20 pb-4">
+                <CardTitle className="text-slate-900">Available Role Options (Firebase)</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 p-5">
+                <div className="flex flex-wrap gap-2">
+                  {enabledRoleOptions.map((option) => (
+                    <span key={option.value} className="rounded-full border border-white/55 bg-white/60 px-3 py-1 text-xs font-semibold text-slate-700">
+                      {option.label}
+                    </span>
+                  ))}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {departmentLabels.map((department) => (
+                    <span key={department} className="rounded-full border border-white/55 bg-white/50 px-3 py-1 text-xs text-slate-700">
+                      {department}
+                    </span>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="glass-surface border-white/55 bg-white/18">
+              <CardHeader className="border-b border-white/35 bg-white/20 pb-4">
+                <CardTitle className="flex items-center gap-2 text-slate-900">
+                  <History className="h-5 w-5" />
+                  Recent Role Changes
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 p-5">
+                {roleAudit.length === 0 ? (
+                  <p className="glass-muted rounded-xl p-4 text-sm text-slate-700">No role changes recorded yet.</p>
+                ) : (
+                  roleAudit.map((log) => (
+                    <div key={log.id} className="glass-muted rounded-xl border border-white/45 p-4">
+                      <p className="text-sm font-semibold text-slate-900">
+                        {log.targetDisplayName} ({log.targetEmail})
+                      </p>
+                      <p className="text-xs text-slate-700">
+                        {roleLabel(log.fromRole)} to {roleLabel(log.toRole)} | Changed by {log.changedByEmail}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-600">{formatDate(log.changedAt)}</p>
+                    </div>
+                  ))
+                )}
               </CardContent>
             </Card>
           </div>

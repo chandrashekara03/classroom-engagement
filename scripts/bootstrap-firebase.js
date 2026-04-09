@@ -16,24 +16,20 @@ function resolveServiceAccountPath() {
   return candidate ? path.join(cwd, candidate) : null;
 }
 
-function initAdmin() {
+async function initAdmin() {
   if (admin.apps.length) {
     return admin.app();
   }
 
   const serviceAccountPath = resolveServiceAccountPath();
 
-  if (!serviceAccountPath) {
-    throw new Error(
-      'Service account JSON not found. Set FIREBASE_SERVICE_ACCOUNT_PATH or place firebase-adminsdk JSON in project root.'
-    );
-  }
-
-  const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
-  const projectId =
-    serviceAccount.project_id ||
+  const projectIdFromEnv =
     process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ||
+    process.env.FIREBASE_PROJECT_ID ||
     'classroomengagement-2026';
+  const projectId = serviceAccountPath
+    ? JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8')).project_id || projectIdFromEnv
+    : projectIdFromEnv;
   const defaultDatabaseUrl =
     projectId === 'classroomengagement-2026'
       ? 'https://classroomengagement-2026-default-rtdb.asia-southeast1.firebasedatabase.app'
@@ -45,10 +41,34 @@ function initAdmin() {
   console.log(`Using Firebase project: ${projectId}`);
   console.log(`Using Realtime DB URL: ${databaseURL}`);
 
+  if (serviceAccountPath) {
+    const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+    return admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+      databaseURL,
+      projectId,
+    });
+  }
+
+  console.warn(
+    'Service account JSON not found. Falling back to default credentials (ADC/environment).' +
+      ' Set FIREBASE_SERVICE_ACCOUNT_PATH for explicit service account auth.'
+  );
+
+  const applicationDefaultCredential = admin.credential.applicationDefault();
+
+  try {
+    await applicationDefaultCredential.getAccessToken();
+  } catch {
+    throw new Error(
+      'No Firebase admin credentials found. Set FIREBASE_SERVICE_ACCOUNT_PATH to a firebase-adminsdk JSON or configure Google ADC.'
+    );
+  }
+
   return admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-    databaseURL,
+    credential: applicationDefaultCredential,
     projectId,
+    databaseURL,
   });
 }
 
@@ -65,7 +85,7 @@ async function ensureSection(db, key, defaultValue) {
 }
 
 async function main() {
-  initAdmin();
+  await initAdmin();
   const db = admin.database();
 
   const requiredSections = {
@@ -76,9 +96,42 @@ async function main() {
     },
     admins: {},
     teachers: {},
+    students: {},
     users: {},
+    roleOptions: {
+      roles: [
+        {
+          value: 'admin',
+          label: 'Admin',
+          description: 'Can manage users, roles, and admin dashboard settings.',
+          enabled: true,
+        },
+        {
+          value: 'teacher',
+          label: 'Teacher',
+          description: 'Can create activities, sessions, and review classroom analytics.',
+          enabled: true,
+        },
+        {
+          value: 'student',
+          label: 'Student',
+          description: 'Can join sessions and submit activity responses.',
+          enabled: true,
+        },
+      ],
+      departments: [
+        { value: 'computer-science', label: 'Computer Science' },
+        { value: 'mathematics', label: 'Mathematics' },
+        { value: 'physics', label: 'Physics' },
+        { value: 'commerce', label: 'Commerce' },
+        { value: 'management', label: 'Management' },
+      ],
+      updatedAt: new Date().toISOString(),
+    },
+    adminRoleChanges: {},
     activityLogs: {},
     sessions: {},
+    responses: {},
     activityTemplates: {},
     auditLogs: {},
   };

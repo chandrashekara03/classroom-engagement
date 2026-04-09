@@ -12,10 +12,11 @@ type UserRoleRecord = {
   lastLoginAt: string;
 };
 
-type TeacherRecord = {
+type StudentRecord = {
   uid: string;
   email: string;
   displayName: string;
+  studentId: string;
   department: string;
   createdAt: string;
   lastLoginAt: string;
@@ -27,7 +28,7 @@ function normalizeEmail(email: string): string {
 
 function normalizeDisplayName(displayName: string, email: string): string {
   const cleaned = String(displayName || '').trim();
-  return cleaned || email.split('@')[0] || 'teacher-user';
+  return cleaned || email.split('@')[0] || 'student-user';
 }
 
 function getErrorCode(error: unknown): string {
@@ -49,12 +50,13 @@ export async function POST(req: NextRequest) {
     const normalizedUid = String(body?.uid || '').trim();
     const normalizedEmail = normalizeEmail(body?.email);
     const normalizedDisplayNameInput = String(body?.displayName || '').trim();
+    const normalizedStudentIdInput = String(body?.studentId || '').trim();
     const normalizedDepartment = String(body?.department || '').trim() || 'Computer Science';
     const password = String(body?.password || '');
 
     if (!normalizedUid && !normalizedEmail) {
       return NextResponse.json(
-        { error: 'Either uid or email is required to assign teacher role' },
+        { error: 'Either uid or email is required to assign student role' },
         { status: 400 }
       );
     }
@@ -73,14 +75,14 @@ export async function POST(req: NextRequest) {
 
         if (!normalizedEmail || !normalizedDisplayNameInput) {
           return NextResponse.json(
-            { error: 'displayName and email are required when creating a new teacher account' },
+            { error: 'displayName and email are required when creating a new student account' },
             { status: 400 }
           );
         }
 
         if (!password || password.length < 6) {
           return NextResponse.json(
-            { error: 'Password with at least 6 characters is required for new teacher accounts' },
+            { error: 'Password with at least 6 characters is required for new student accounts' },
             { status: 400 }
           );
         }
@@ -109,17 +111,17 @@ export async function POST(req: NextRequest) {
       email
     );
 
-    const [userSnapshot, teacherSnapshot, studentSnapshot, adminSnapshot, authFresh] = await Promise.all([
+    const [userSnapshot, studentSnapshot, teacherSnapshot, adminSnapshot, authFresh] = await Promise.all([
       adminDb.ref(`users/${uid}`).get(),
-      adminDb.ref(`teachers/${uid}`).get(),
       adminDb.ref(`students/${uid}`).get(),
+      adminDb.ref(`teachers/${uid}`).get(),
       adminDb.ref(`admins/${uid}`).get(),
       adminAuth.getUser(uid),
     ]);
 
     if (adminSnapshot.exists()) {
       return NextResponse.json(
-        { error: 'Cannot change an admin account to teacher role from this endpoint' },
+        { error: 'Cannot change an admin account to student role from this endpoint' },
         { status: 409 }
       );
     }
@@ -128,8 +130,8 @@ export async function POST(req: NextRequest) {
     const existingUser = (userSnapshot.exists() ? userSnapshot.val() : null) as
       | Partial<UserRoleRecord>
       | null;
-    const existingTeacher = (teacherSnapshot.exists() ? teacherSnapshot.val() : null) as
-      | Partial<TeacherRecord>
+    const existingStudent = (studentSnapshot.exists() ? studentSnapshot.val() : null) as
+      | Partial<StudentRecord>
       | null;
 
     const previousRole = resolveCurrentRole(existingUser?.role, {
@@ -141,57 +143,58 @@ export async function POST(req: NextRequest) {
     const userPayload: UserRoleRecord = {
       uid,
       email,
-      role: 'teacher',
+      role: 'student',
       displayName,
-      createdAt: existingUser?.createdAt || existingTeacher?.createdAt || now,
+      createdAt: existingUser?.createdAt || existingStudent?.createdAt || now,
       lastLoginAt: now,
     };
 
-    const teacherPayload: TeacherRecord = {
+    const studentPayload: StudentRecord = {
       uid,
       email,
       displayName,
+      studentId: normalizedStudentIdInput || existingStudent?.studentId || email.split('@')[0],
       department: normalizedDepartment,
-      createdAt: existingTeacher?.createdAt || existingUser?.createdAt || now,
+      createdAt: existingStudent?.createdAt || existingUser?.createdAt || now,
       lastLoginAt: now,
     };
 
     await Promise.all([
       adminDb.ref(`users/${uid}`).set(userPayload),
-      adminDb.ref(`teachers/${uid}`).set(teacherPayload),
-      adminDb.ref(`students/${uid}`).remove(),
+      adminDb.ref(`students/${uid}`).set(studentPayload),
+      adminDb.ref(`teachers/${uid}`).remove(),
       adminAuth.setCustomUserClaims(uid, {
         ...(authFresh.customClaims || {}),
-        role: 'teacher',
+        role: 'student',
       }),
       recordRoleAudit({
         targetUid: uid,
         targetEmail: email,
         targetDisplayName: displayName,
         fromRole: previousRole,
-        toRole: 'teacher',
+        toRole: 'student',
         changedByUid: adminCheck.admin.uid,
         changedByEmail: adminCheck.admin.email,
-        reason: 'Assigned teacher role from admin dashboard',
+        reason: 'Assigned student role from admin dashboard',
       }),
     ]);
 
     return NextResponse.json(
       {
         success: true,
-        message: 'Teacher role assigned successfully',
-        teacher: teacherPayload,
+        message: 'Student role assigned successfully',
+        student: studentPayload,
       },
-      { status: teacherSnapshot.exists() ? 200 : 201 }
+      { status: studentSnapshot.exists() ? 200 : 201 }
     );
   } catch (error: unknown) {
-    console.error('Error assigning teacher role:', error);
+    console.error('Error assigning student role:', error);
 
     if (createdUid) {
       try {
         await adminAuth.deleteUser(createdUid);
       } catch (rollbackError) {
-        console.error('Teacher-role rollback failed:', rollbackError);
+        console.error('Student-role rollback failed:', rollbackError);
       }
     }
 
@@ -207,6 +210,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Email is already in use' }, { status: 409 });
     }
 
-    return NextResponse.json({ error: 'Failed to assign teacher role' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to assign student role' }, { status: 500 });
   }
 }

@@ -1,6 +1,6 @@
 {
   "description": "Firebase Realtime Database Schema for Classroom Engagement",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "root": {
     "admins": {
       "{uid}": {
@@ -40,6 +40,39 @@
         "role": "teacher | student | admin",
         "createdAt": "ISO8601 string",
         "lastLoginAt": "ISO8601 string"
+      }
+    },
+    "roleOptions": {
+      "roles": [
+        {
+          "value": "admin | teacher | student",
+          "label": "string",
+          "description": "string",
+          "enabled": "boolean"
+        }
+      ],
+      "departments": [
+        {
+          "value": "string (slug)",
+          "label": "string"
+        }
+      ],
+      "updatedAt": "ISO8601 string",
+      "updatedByUid": "string (optional)",
+      "updatedByEmail": "string (optional)"
+    },
+    "adminRoleChanges": {
+      "{auditId}": {
+        "id": "string",
+        "targetUid": "string",
+        "targetEmail": "string",
+        "targetDisplayName": "string",
+        "fromRole": "admin | teacher | student | none",
+        "toRole": "admin | teacher | student",
+        "changedByUid": "string",
+        "changedByEmail": "string",
+        "changedAt": "ISO8601 string",
+        "reason": "string (optional)"
       }
     },
     "activityLogs": {

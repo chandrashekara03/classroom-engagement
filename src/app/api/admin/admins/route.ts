@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/adminApiAuth';
 import { adminAuth, adminDb } from '@/lib/firebaseAdmin';
+import { recordRoleAudit, resolveCurrentRole } from '@/lib/adminRoleManagement';
 
 type AdminRecord = {
   uid: string;
@@ -84,40 +85,54 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const email = normalizeEmail(body?.email);
+    const normalizedUid = String(body?.uid || '').trim();
+    const requestedEmail = normalizeEmail(body?.email);
     const password = String(body?.password || '');
     const requestedDisplayName = String(body?.displayName || '');
 
-    if (!email) {
-      return NextResponse.json({ error: 'Email is required' }, { status: 400 });
+    if (!normalizedUid && !requestedEmail) {
+      return NextResponse.json({ error: 'Either uid or email is required' }, { status: 400 });
     }
 
     let authUser;
 
-    try {
-      authUser = await adminAuth.getUserByEmail(email);
-    } catch (error: unknown) {
-      if (getErrorCode(error) !== 'auth/user-not-found') {
-        throw error;
-      }
+    if (normalizedUid) {
+      authUser = await adminAuth.getUser(normalizedUid);
+    } else {
+      try {
+        authUser = await adminAuth.getUserByEmail(requestedEmail);
+      } catch (error: unknown) {
+        if (getErrorCode(error) !== 'auth/user-not-found') {
+          throw error;
+        }
 
-      if (!password || password.length < 6) {
-        return NextResponse.json(
-          { error: 'Password with at least 6 characters is required for new users' },
-          { status: 400 }
-        );
-      }
+        if (!password || password.length < 6) {
+          return NextResponse.json(
+            { error: 'Password with at least 6 characters is required for new users' },
+            { status: 400 }
+          );
+        }
 
-      const displayNameForCreate = normalizeDisplayName(requestedDisplayName, email);
-      authUser = await adminAuth.createUser({
-        email,
-        password,
-        displayName: displayNameForCreate,
-      });
-      createdUid = authUser.uid;
+        const displayNameForCreate = normalizeDisplayName(requestedDisplayName, requestedEmail);
+        authUser = await adminAuth.createUser({
+          email: requestedEmail,
+          password,
+          displayName: displayNameForCreate,
+        });
+        createdUid = authUser.uid;
+      }
     }
 
     const uid = authUser.uid;
+    const email = normalizeEmail(authUser.email || requestedEmail);
+
+    if (!email) {
+      return NextResponse.json(
+        { error: 'Target account must have a valid email address' },
+        { status: 400 }
+      );
+    }
+
     const displayName = normalizeDisplayName(
       requestedDisplayName || authUser.displayName || '',
       email
@@ -126,10 +141,14 @@ export async function POST(req: NextRequest) {
 
     const userRef = adminDb.ref(`users/${uid}`);
     const adminRef = adminDb.ref(`admins/${uid}`);
+    const teacherRef = adminDb.ref(`teachers/${uid}`);
+    const studentRef = adminDb.ref(`students/${uid}`);
 
-    const [existingUserSnapshot, existingAdminSnapshot, authFresh] = await Promise.all([
+    const [existingUserSnapshot, existingAdminSnapshot, existingTeacherSnapshot, existingStudentSnapshot, authFresh] = await Promise.all([
       userRef.get(),
       adminRef.get(),
+      teacherRef.get(),
+      studentRef.get(),
       adminAuth.getUser(uid),
     ]);
 
@@ -139,6 +158,12 @@ export async function POST(req: NextRequest) {
     const existingAdmin = (existingAdminSnapshot.exists() ? existingAdminSnapshot.val() : null) as
       | Partial<AdminRecord>
       | null;
+
+    const previousRole = resolveCurrentRole(existingUser?.role, {
+      hasAdmin: existingAdminSnapshot.exists(),
+      hasTeacher: existingTeacherSnapshot.exists(),
+      hasStudent: existingStudentSnapshot.exists(),
+    });
 
     const userPayload: UserRecord = {
       uid,
@@ -163,6 +188,16 @@ export async function POST(req: NextRequest) {
       adminAuth.setCustomUserClaims(uid, {
         ...(authFresh.customClaims || {}),
         role: 'admin',
+      }),
+      recordRoleAudit({
+        targetUid: uid,
+        targetEmail: email,
+        targetDisplayName: displayName,
+        fromRole: previousRole,
+        toRole: 'admin',
+        changedByUid: adminCheck.admin.uid,
+        changedByEmail: adminCheck.admin.email,
+        reason: 'Assigned admin role from admin dashboard',
       }),
     ]);
 
@@ -193,6 +228,10 @@ export async function POST(req: NextRequest) {
 
     if (getErrorCode(error) === 'auth/invalid-email') {
       return NextResponse.json({ error: 'Invalid email format' }, { status: 400 });
+    }
+
+    if (getErrorCode(error) === 'auth/user-not-found') {
+      return NextResponse.json({ error: 'Target user not found' }, { status: 404 });
     }
 
     return NextResponse.json({ error: 'Failed to create admin account' }, { status: 500 });
