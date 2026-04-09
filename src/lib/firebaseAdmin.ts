@@ -32,9 +32,20 @@ function buildDefaultDatabaseUrl(projectId: string) {
 }
 
 type FirebaseCliToken = {
-    accessToken: string;
+    accessToken: string | null;
     expiresAtMs: number | null;
+    refreshToken: string | null;
 };
+
+const FIREBASE_CLI_CLIENT_ID =
+    process.env.FIREBASE_CLIENT_ID ||
+    '563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com';
+
+const FIREBASE_CLI_CLIENT_SECRET =
+    process.env.FIREBASE_CLIENT_SECRET ||
+    'j9iVZfS8kkCEFUPaAeJV0sAi';
+
+const FIREBASE_TOKEN_REFRESH_BUFFER_MS = 2 * 60 * 1000;
 
 function parseFirebaseCliToken(raw: string): FirebaseCliToken | null {
     try {
@@ -42,15 +53,21 @@ function parseFirebaseCliToken(raw: string): FirebaseCliToken | null {
             tokens?: {
                 access_token?: unknown;
                 expires_at?: unknown;
+                refresh_token?: unknown;
             };
         };
 
         const accessToken =
             typeof parsed.tokens?.access_token === 'string'
                 ? parsed.tokens.access_token.trim()
-                : '';
+                : null;
 
-        if (!accessToken) {
+        const refreshToken =
+            typeof parsed.tokens?.refresh_token === 'string'
+                ? parsed.tokens.refresh_token.trim()
+                : null;
+
+        if (!accessToken && !refreshToken) {
             return null;
         }
 
@@ -59,7 +76,11 @@ function parseFirebaseCliToken(raw: string): FirebaseCliToken | null {
                 ? parsed.tokens.expires_at
                 : null;
 
-        return { accessToken, expiresAtMs };
+        return {
+            accessToken: accessToken && accessToken.length > 0 ? accessToken : null,
+            expiresAtMs,
+            refreshToken: refreshToken && refreshToken.length > 0 ? refreshToken : null,
+        };
     } catch {
         return null;
     }
@@ -97,16 +118,91 @@ function readFirebaseCliToken(): FirebaseCliToken | null {
     return null;
 }
 
+async function refreshFirebaseCliAccessToken(refreshToken: string): Promise<FirebaseCliToken | null> {
+    const body = new URLSearchParams({
+        client_id: FIREBASE_CLI_CLIENT_ID,
+        client_secret: FIREBASE_CLI_CLIENT_SECRET,
+        refresh_token: refreshToken,
+        grant_type: 'refresh_token',
+    });
+
+    try {
+        const response = await fetch('https://oauth2.googleapis.com/token', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body,
+        });
+
+        if (!response.ok) {
+            return null;
+        }
+
+        const payload = (await response.json()) as {
+            access_token?: unknown;
+            expires_in?: unknown;
+        };
+
+        const accessToken =
+            typeof payload.access_token === 'string' ? payload.access_token.trim() : '';
+
+        if (!accessToken) {
+            return null;
+        }
+
+        const expiresInSec =
+            typeof payload.expires_in === 'number' && Number.isFinite(payload.expires_in)
+                ? payload.expires_in
+                : 3600;
+
+        return {
+            accessToken,
+            expiresAtMs: Date.now() + expiresInSec * 1000,
+            refreshToken,
+        };
+    } catch {
+        return null;
+    }
+}
+
+async function getValidFirebaseCliToken(): Promise<FirebaseCliToken | null> {
+    const current = readFirebaseCliToken();
+    if (!current) {
+        return null;
+    }
+
+    const isCurrentTokenValid =
+        Boolean(current.accessToken) &&
+        (current.expiresAtMs === null ||
+            current.expiresAtMs - Date.now() > FIREBASE_TOKEN_REFRESH_BUFFER_MS);
+
+    if (isCurrentTokenValid) {
+        return current;
+    }
+
+    if (!current.refreshToken) {
+        return null;
+    }
+
+    const refreshed = await refreshFirebaseCliAccessToken(current.refreshToken);
+    if (!refreshed) {
+        return null;
+    }
+
+    return refreshed;
+}
+
 function createFirebaseCliCredential(): admin.credential.Credential | null {
     const token = readFirebaseCliToken();
-    if (!token) {
+    if (!token?.accessToken && !token?.refreshToken) {
         return null;
     }
 
     return {
         getAccessToken: async () => {
-            const latest = readFirebaseCliToken();
-            if (!latest) {
+            const latest = await getValidFirebaseCliToken();
+            if (!latest || !latest.accessToken) {
                 throw new Error('Firebase CLI token is unavailable. Run `firebase login` again.');
             }
 
