@@ -5,38 +5,58 @@ import { Card, CardHeader, CardTitle, CardContent, Button, SessionStatusIndicato
 import { LucidePlus, LucideUsers, LucidePlay, LucideChevronLeft, LucideCalendar } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { dbService, ActivityTemplate, Session } from "@/lib/database";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function SessionsPage() {
   const router = useRouter();
-  const [sessions, setSessions] = useState<any[]>([]);
-  const [templates, setTemplates] = useState<any[]>([]);
+  const { user } = useAuth();
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [templates, setTemplates] = useState<ActivityTemplate[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const savedSessions = JSON.parse(localStorage.getItem('classroom_sessions') || '[]');
-    const savedTemplates = JSON.parse(localStorage.getItem('classroom_templates') || '[]');
-    setSessions(savedSessions);
-    setTemplates(savedTemplates);
-  }, []);
+    if (!user) {
+      setLoading(false);
+      return;
+    }
 
-  const handleLaunch = (templateId: string) => {
-    const template = templates.find(t => t.id === templateId);
-    // eslint-disable-next-line react-hooks/purity
-    const code = Math.random().toString(36).substr(2, 6).toUpperCase();
-    const newSession = {
-      // eslint-disable-next-line react-hooks/purity
-      id: `session-${Date.now()}`,
-      code,
-      templateId,
-      title: template?.title || `Session ${code}`,
-      status: "WAITING",
-      createdAt: new Date().toISOString()
+    const loadData = async () => {
+      setLoading(true);
+      const [savedSessions, savedTemplates] = await Promise.all([
+        dbService.getTeacherSessions(user.uid),
+        dbService.getTemplatesByTeacher(user.uid),
+      ]);
+      setSessions(savedSessions);
+      setTemplates(savedTemplates);
+      setLoading(false);
     };
-    
-    const existingSessions = JSON.parse(localStorage.getItem('classroom_sessions') || '[]');
-    const updatedSessions = [...existingSessions, newSession];
-    localStorage.setItem('classroom_sessions', JSON.stringify(updatedSessions));
-    setSessions(updatedSessions);
+
+    void loadData();
+  }, [user]);
+
+  const handleLaunch = async (templateId: string) => {
+    if (!user) return;
+
+    const template = templates.find(t => t.id === templateId);
+    if (!template) return;
+
+    const joinPassword = window.prompt('Set session password (minimum 4 chars):', '000000')?.trim() || '000000';
+    if (joinPassword.length < 4) {
+      alert('Session password must be at least 4 characters.');
+      return;
+    }
+
+    const newSession = await dbService.createSessionFromTemplate({
+      teacherId: user.uid,
+      teacherEmail: user.email || undefined,
+      template,
+      joinPassword,
+      status: 'SCHEDULED',
+    });
+
+    setSessions((prev) => [...prev, newSession]);
     setShowCreateModal(false);
     
     router.push(`/teacher/session/${newSession.id}`);
@@ -69,7 +89,14 @@ export default function SessionsPage() {
           <CardTitle>Continuous & Past Sessions</CardTitle>
         </CardHeader>
         <CardContent className="pt-6">
-          {sessions.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-12 space-y-4">
+              <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto border border-slate-100 animate-pulse">
+                <LucideCalendar size={32} className="text-slate-300" />
+              </div>
+              <p className="text-slate-500 font-medium">Loading sessions...</p>
+            </div>
+          ) : sessions.length === 0 ? (
             <div className="text-center py-12 space-y-4">
               <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto border border-slate-100">
                 <LucideCalendar size={32} className="text-slate-300" />
@@ -92,7 +119,7 @@ export default function SessionsPage() {
                   </div>
                   
                   <div className="flex items-center gap-4 text-sm text-slate-600 mb-4">
-                    <span className="flex items-center gap-1.5"><LucideUsers size={14}/> 0 Students</span>
+                    <span className="flex items-center gap-1.5"><LucideUsers size={14}/> {Object.keys(session.participants || {}).length} Students</span>
                     <span className="bg-slate-100 px-2 py-0.5 rounded font-mono font-bold">Code: {session.code}</span>
                   </div>
 

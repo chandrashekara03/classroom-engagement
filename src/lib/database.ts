@@ -111,6 +111,28 @@ function assertDb(): Database {
   return database;
 }
 
+function isTeacherRecord(value: unknown): value is Teacher {
+  const candidate = value as Partial<Teacher>;
+  return Boolean(
+    candidate &&
+    typeof candidate === 'object' &&
+    typeof candidate.uid === 'string' &&
+    typeof candidate.email === 'string' &&
+    typeof candidate.displayName === 'string'
+  );
+}
+
+function isStudentRecord(value: unknown): value is Student {
+  const candidate = value as Partial<Student>;
+  return Boolean(
+    candidate &&
+    typeof candidate === 'object' &&
+    typeof candidate.uid === 'string' &&
+    typeof candidate.email === 'string' &&
+    typeof candidate.displayName === 'string'
+  );
+}
+
 class FirebaseDatabaseService {
 
   // ── Unified Users ────────────────────────────
@@ -136,6 +158,11 @@ class FirebaseDatabaseService {
   async updateUserLastLogin(uid: string): Promise<void> {
     const db = assertDb();
     await update(ref(db, `users/${uid}`), { lastLoginAt: new Date().toISOString() });
+  }
+
+  async deleteUser(uid: string): Promise<void> {
+    const db = assertDb();
+    await remove(ref(db, `users/${uid}`));
   }
 
   // ── Teachers ──────────────────────────────
@@ -174,7 +201,12 @@ class FirebaseDatabaseService {
       const snapshot = await get(ref(db, 'teachers'));
       if (!snapshot.exists()) return [];
       const teachers: Teacher[] = [];
-      snapshot.forEach((child) => { teachers.push(child.val()); });
+      snapshot.forEach((child) => {
+        const value = child.val();
+        if (isTeacherRecord(value)) {
+          teachers.push(value);
+        }
+      });
       return teachers;
     } catch { return []; }
   }
@@ -186,7 +218,10 @@ class FirebaseDatabaseService {
       const teachers: Teacher[] = [];
       if (snapshot.exists()) {
         snapshot.forEach((c) => {
-          teachers.push(c.val());
+          const value = c.val();
+          if (isTeacherRecord(value)) {
+            teachers.push(value);
+          }
         });
       }
       callback(teachers);
@@ -230,7 +265,12 @@ class FirebaseDatabaseService {
       const snapshot = await get(ref(db, 'students'));
       if (!snapshot.exists()) return [];
       const students: Student[] = [];
-      snapshot.forEach((child) => { students.push(child.val()); });
+      snapshot.forEach((child) => {
+        const value = child.val();
+        if (isStudentRecord(value)) {
+          students.push(value);
+        }
+      });
       return students;
     } catch { return []; }
   }
@@ -242,7 +282,10 @@ class FirebaseDatabaseService {
       const students: Student[] = [];
       if (snapshot.exists()) {
         snapshot.forEach((c) => {
-          students.push(c.val());
+          const value = c.val();
+          if (isStudentRecord(value)) {
+            students.push(value);
+          }
         });
       }
       callback(students);

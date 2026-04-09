@@ -1,9 +1,15 @@
+import { requireAdmin } from '@/lib/adminApiAuth';
 import { adminAuth } from '@/lib/firebaseAdmin';
 import { dbService } from '@/lib/database';
 import { NextRequest, NextResponse } from 'next/server';
 
 // GET all teachers
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const adminCheck = await requireAdmin(req);
+  if (!adminCheck.ok) {
+    return adminCheck.response;
+  }
+
   try {
     const teachers = await dbService.getAllTeachers();
     return NextResponse.json({ teachers }, { status: 200 });
@@ -18,18 +24,35 @@ export async function GET() {
 
 // POST create teacher
 export async function POST(req: NextRequest) {
+  const adminCheck = await requireAdmin(req);
+  if (!adminCheck.ok) {
+    return adminCheck.response;
+  }
+
+  let createdUid: string | null = null;
+
   try {
     const { email, password, displayName, department } = await req.json();
+    const normalizedEmail = String(email || '').trim().toLowerCase();
+    const normalizedDisplayName = String(displayName || '').trim();
+    const teacherDepartment = String(department || '').trim() || 'Computer Science';
 
-    if (!email || !password || !displayName) {
+    if (!normalizedEmail || !password || !normalizedDisplayName) {
       return NextResponse.json(
         { error: 'Email, password, and displayName are required' },
         { status: 400 }
       );
     }
 
+    if (String(password).length < 6) {
+      return NextResponse.json(
+        { error: 'Password must be at least 6 characters' },
+        { status: 400 }
+      );
+    }
+
     // Validate email domain
-    if (!email.endsWith('christuniversity.in')) {
+    if (!normalizedEmail.endsWith('@christuniversity.in')) {
       return NextResponse.json(
         { error: 'Email must be a christuniversity.in account' },
         { status: 400 }
@@ -38,18 +61,26 @@ export async function POST(req: NextRequest) {
 
     // Create user in Firebase Auth
     const userRecord = await adminAuth.createUser({
-      email,
+      email: normalizedEmail,
       password,
-      displayName,
+      displayName: normalizedDisplayName,
     });
+    createdUid = userRecord.uid;
 
-    // Create teacher record in database
-    await dbService.createTeacher({
-      uid: userRecord.uid,
-      email,
-      displayName,
-      department: department || 'Computer Science',
-    });
+    await Promise.all([
+      dbService.createTeacher({
+        uid: userRecord.uid,
+        email: normalizedEmail,
+        displayName: normalizedDisplayName,
+        department: teacherDepartment,
+      }),
+      dbService.createUser({
+        uid: userRecord.uid,
+        email: normalizedEmail,
+        displayName: normalizedDisplayName,
+        role: 'teacher',
+      }),
+    ]);
 
     return NextResponse.json(
       {
@@ -62,6 +93,15 @@ export async function POST(req: NextRequest) {
     );
   } catch (error: any) {
     console.error('Error creating teacher:', error);
+
+    if (createdUid) {
+      try {
+        await adminAuth.deleteUser(createdUid);
+      } catch (rollbackError) {
+        console.error('Teacher rollback failed:', rollbackError);
+      }
+    }
+
     let errorMessage = 'Failed to create teacher';
 
     if (error.code === 'auth/email-already-exists') {

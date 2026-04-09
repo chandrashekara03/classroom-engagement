@@ -3,6 +3,14 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --glass-bg: rgba(255, 255, 255, 0.28);
+  --glass-border: rgba(255, 255, 255, 0.46);
+  --glass-shadow: 0 24px 56px -28px rgba(15, 23, 42, 0.72);
+  --liquid-base-start: #dbf4ff;
+  --liquid-base-mid: #c5e2ff;
+  --liquid-base-end: #ecf3ff;
+  --liquid-accent-cyan: rgba(56, 189, 248, 0.36);
+  --liquid-accent-indigo: rgba(99, 102, 241, 0.24);
 }
 
 @theme inline {
@@ -22,5 +30,67 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), "Segoe UI", sans-serif;
+}
+
+.liquid-admin-page {
+  background:
+    radial-gradient(circle at 14% 14%, rgba(255, 255, 255, 0.7), transparent 38%),
+    radial-gradient(circle at 84% 18%, var(--liquid-accent-cyan), transparent 45%),
+    radial-gradient(circle at 30% 82%, var(--liquid-accent-indigo), transparent 48%),
+    linear-gradient(130deg, var(--liquid-base-start) 0%, var(--liquid-base-mid) 52%, var(--liquid-base-end) 100%);
+}
+
+.liquid-admin-page::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(115deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.08) 45%, transparent 72%),
+    radial-gradient(circle at 70% 72%, rgba(125, 211, 252, 0.16), transparent 45%);
+  opacity: 0.95;
+}
+
+.liquid-noise {
+  background-image:
+    linear-gradient(0deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.11)),
+    repeating-linear-gradient(
+      45deg,
+      rgba(255, 255, 255, 0.035) 0,
+      rgba(255, 255, 255, 0.035) 1px,
+      transparent 1px,
+      transparent 12px
+    );
+  mix-blend-mode: soft-light;
+  opacity: 0.8;
+}
+
+.glass-surface {
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.56), var(--glass-bg));
+  border: 1px solid rgba(255, 255, 255, 0.56);
+  -webkit-backdrop-filter: blur(18px) saturate(170%);
+  backdrop-filter: blur(18px) saturate(170%);
+  box-shadow: var(--glass-shadow);
+}
+
+.glass-muted {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.44), rgba(255, 255, 255, 0.2));
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+  backdrop-filter: blur(14px) saturate(150%);
+}
+
+@keyframes glassDrift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(0, -16px, 0) scale(1.06);
+  }
+}
+
+.glass-blob {
+  animation: glassDrift 10s ease-in-out infinite;
 }
