@@ -109,6 +109,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               }
               setStudentData(student);
               setTeacherData(null);
+            } else if (dbUser.role === 'admin') {
+              let teacher = await dbService.getTeacher(firebaseUser.uid);
+              if (!teacher) {
+                await dbService.createTeacher({
+                  uid: dbUser.uid,
+                  email: dbUser.email,
+                  displayName: dbUser.displayName,
+                  department: 'Computer Science'
+                });
+                teacher = await dbService.getTeacher(firebaseUser.uid);
+              }
+              setTeacherData(teacher);
+              setStudentData(null);
             } else {
               setTeacherData(null);
               setStudentData(null);

@@ -2,6 +2,7 @@
 
 import { ComponentType, FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { signOut as firebaseSignOut } from 'firebase/auth';
 import { Card, CardHeader, CardTitle, CardContent } from '@classroom/ui-components';
 import { Button } from '@classroom/ui-components';
@@ -212,7 +213,6 @@ export default function AdminDashboard() {
   const [adminForm, setAdminForm] = useState({
     uid: '',
     email: '',
-    password: '',
     displayName: '',
   });
 
@@ -431,7 +431,7 @@ export default function AdminDashboard() {
       if (res.ok) {
         const target = adminForm.uid || adminForm.email || adminForm.displayName;
         setSuccess(`Admin role assigned successfully for ${target}.`);
-        setAdminForm({ uid: '', email: '', password: '', displayName: '' });
+        setAdminForm({ uid: '', email: '', displayName: '' });
         setShowCreateForm(null);
         await loadData();
       } else {
@@ -606,6 +606,12 @@ export default function AdminDashboard() {
           </div>
 
           <div className="flex items-center gap-3">
+            <Link
+              href="/teacher"
+              className="hidden rounded-full border border-white/45 bg-white/35 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-700 hover:bg-white/55 md:block"
+            >
+              Teacher Panel
+            </Link>
             <div className="glass-muted hidden rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-700 md:block">
               Active admins: {admins.length}
             </div>
@@ -718,7 +724,7 @@ export default function AdminDashboard() {
                   }}
                   className="border border-white/45 bg-gradient-to-r from-sky-600 to-cyan-700 text-white hover:from-sky-500 hover:to-cyan-600"
                 >
-                  Create Admin
+                  Promote Existing User to Admin
                 </Button>
                 <Button
                   onClick={() => {
@@ -944,16 +950,19 @@ export default function AdminDashboard() {
                 className="flex items-center gap-2 border border-white/45 bg-white/40 text-slate-800 hover:bg-white/60"
               >
                 <Plus size={18} />
-                {showCreateForm === 'admin' ? 'Cancel' : 'Create Admin'}
+                {showCreateForm === 'admin' ? 'Cancel' : 'Promote Existing User'}
               </Button>
             </div>
 
             {showCreateForm === 'admin' && (
               <Card className="glass-surface border-white/55 bg-white/20">
                 <CardHeader className="border-b border-white/35 bg-white/15 pb-4">
-                  <CardTitle className="text-slate-900">Create or Promote Admin Account</CardTitle>
+                  <CardTitle className="text-slate-900">Promote Existing User to Admin</CardTitle>
                 </CardHeader>
                 <CardContent className="p-6">
+                  <p className="mb-4 text-sm text-slate-700">
+                    Only existing Firebase Auth users can be promoted. This also enables teacher panel access for the promoted admin.
+                  </p>
                   <form onSubmit={handleCreateAdmin} className="space-y-4">
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       <Input
@@ -972,21 +981,14 @@ export default function AdminDashboard() {
                       />
                       <Input
                         type="text"
-                        placeholder="Display name (required for new accounts)"
+                        placeholder="Display name (optional)"
                         value={adminForm.displayName}
                         onChange={(e) => setAdminForm({ ...adminForm, displayName: e.target.value })}
                         className="border-white/50 bg-white/55 text-slate-900 placeholder:text-slate-500"
                       />
-                      <Input
-                        type="password"
-                        placeholder="Password (required for new accounts)"
-                        value={adminForm.password}
-                        onChange={(e) => setAdminForm({ ...adminForm, password: e.target.value })}
-                        className="border-white/50 bg-white/55 text-slate-900 placeholder:text-slate-500"
-                      />
                     </div>
                     <Button type="submit" className="w-full border border-white/50 bg-gradient-to-r from-sky-600 to-cyan-700 text-white hover:from-sky-500 hover:to-cyan-600">
-                      Create or Promote Admin
+                      Promote to Admin
                     </Button>
                   </form>
                 </CardContent>

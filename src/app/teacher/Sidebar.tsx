@@ -70,7 +70,7 @@ const navigationItems = [
 export function Sidebar({ className }: SidebarProps) {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const pathname = usePathname();
-  const { user, logout } = useAuth();
+  const { user, userType, logout } = useAuth();
 
   return (
     <>
@@ -135,6 +135,23 @@ export function Sidebar({ className }: SidebarProps) {
                 </Link>
               );
             })}
+
+            {userType === 'admin' && (
+              <Link
+                href="/admin/dashboard"
+                onClick={() => setIsMobileOpen(false)}
+                className={`
+                  mt-3 flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors
+                  ${pathname.startsWith('/admin')
+                    ? 'bg-sky-50 text-sky-700 border border-sky-200'
+                    : 'text-slate-700 hover:bg-slate-100'
+                  }
+                `}
+              >
+                <LayoutDashboard className={`mr-3 h-4 w-4 ${pathname.startsWith('/admin') ? 'text-sky-700' : 'text-slate-400'}`} />
+                Admin Panel
+              </Link>
+            )}
           </nav>
 
           {/* User section */}

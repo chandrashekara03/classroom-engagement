@@ -6,9 +6,45 @@ import { BookOpen } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useRouter } from "next/navigation";
 
+type PortalLink = {
+  href: string;
+  label: string;
+  className: string;
+};
+
 export default function RootRoleSelectionPage() {
   const { user, loading, userType } = useAuth();
   const router = useRouter();
+
+  const portalLinks: PortalLink[] =
+    userType === 'admin'
+      ? [
+          {
+            href: '/admin/dashboard',
+            label: 'Admin',
+            className: 'w-full px-4 py-3 rounded-xl bg-slate-900 text-white hover:bg-slate-800 transition-colors',
+          },
+          {
+            href: '/teacher',
+            label: 'Teacher',
+            className: 'w-full px-4 py-3 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors',
+          },
+        ]
+      : userType === 'teacher'
+        ? [
+            {
+              href: '/teacher',
+              label: 'Teacher',
+              className: 'w-full px-4 py-3 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors',
+            },
+          ]
+        : [
+            {
+              href: '/student',
+              label: 'Student',
+              className: 'w-full px-4 py-3 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors',
+            },
+          ];
 
   useEffect(() => {
     if (!loading && user) {
@@ -43,25 +79,16 @@ export default function RootRoleSelectionPage() {
             Your account is signed in. If automatic redirect is taking longer than expected,
             choose your portal below.
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <Link
-              href="/admin/dashboard"
-              className="w-full px-4 py-3 rounded-xl bg-slate-900 text-white hover:bg-slate-800 transition-colors"
-            >
-              Admin
-            </Link>
-            <Link
-              href="/teacher"
-              className="w-full px-4 py-3 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors"
-            >
-              Teacher
-            </Link>
-            <Link
-              href="/student"
-              className="w-full px-4 py-3 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors"
-            >
-              Student
-            </Link>
+          <div className={`grid grid-cols-1 gap-3 ${portalLinks.length > 1 ? 'md:grid-cols-2' : ''}`}>
+            {portalLinks.map((portalLink) => (
+              <Link
+                key={portalLink.href}
+                href={portalLink.href}
+                className={portalLink.className}
+              >
+                {portalLink.label}
+              </Link>
+            ))}
           </div>
         </div>
       </div>

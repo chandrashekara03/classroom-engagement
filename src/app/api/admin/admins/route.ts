@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/adminApiAuth';
-import { adminAuth, adminDb } from '@/lib/firebaseAdmin';
+import { adminDb } from '@/lib/firebaseAdmin';
 import { recordRoleAudit, resolveCurrentRole } from '@/lib/adminRoleManagement';
 
 type AdminRecord = {
@@ -81,50 +81,47 @@ export async function POST(req: NextRequest) {
     return adminCheck.response;
   }
 
-  let createdUid: string | null = null;
-
   try {
     const body = await req.json();
     const normalizedUid = String(body?.uid || '').trim();
     const requestedEmail = normalizeEmail(body?.email);
-    const password = String(body?.password || '');
     const requestedDisplayName = String(body?.displayName || '');
 
     if (!normalizedUid && !requestedEmail) {
       return NextResponse.json({ error: 'Either uid or email is required' }, { status: 400 });
     }
 
-    let authUser;
+    const usersRef = adminDb.ref('users');
+    const usersSnapshot = await usersRef.get();
 
-    if (normalizedUid) {
-      authUser = await adminAuth.getUser(normalizedUid);
-    } else {
-      try {
-        authUser = await adminAuth.getUserByEmail(requestedEmail);
-      } catch (error: unknown) {
-        if (getErrorCode(error) !== 'auth/user-not-found') {
-          throw error;
-        }
+    let uid = normalizedUid;
+    let existingUserFromDb: Partial<UserRecord> | null = null;
 
-        if (!password || password.length < 6) {
-          return NextResponse.json(
-            { error: 'Password with at least 6 characters is required for new users' },
-            { status: 400 }
-          );
-        }
-
-        const displayNameForCreate = normalizeDisplayName(requestedDisplayName, requestedEmail);
-        authUser = await adminAuth.createUser({
-          email: requestedEmail,
-          password,
-          displayName: displayNameForCreate,
-        });
-        createdUid = authUser.uid;
+    if (uid) {
+      const directSnapshot = await adminDb.ref(`users/${uid}`).get();
+      if (directSnapshot.exists()) {
+        existingUserFromDb = directSnapshot.val() as Partial<UserRecord>;
       }
+    } else if (requestedEmail && usersSnapshot.exists()) {
+      usersSnapshot.forEach((child) => {
+        if (existingUserFromDb) return;
+        const candidate = child.val() as Partial<UserRecord>;
+        const candidateEmail = normalizeEmail(candidate?.email || '');
+        if (candidateEmail && candidateEmail === requestedEmail) {
+          uid = child.key || '';
+          existingUserFromDb = candidate;
+        }
+      });
     }
 
-    const uid = authUser.uid;
-    const email = normalizeEmail(authUser.email || requestedEmail);
+    if (!uid || !existingUserFromDb) {
+      return NextResponse.json(
+        { error: 'Target user not found in database. Only existing users can be promoted to admin.' },
+        { status: 404 }
+      );
+    }
+
+    const email = normalizeEmail(existingUserFromDb.email || requestedEmail);
 
     if (!email) {
       return NextResponse.json(
@@ -133,10 +130,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const displayName = normalizeDisplayName(
-      requestedDisplayName || authUser.displayName || '',
-      email
-    );
+    const displayName = normalizeDisplayName(requestedDisplayName || existingUserFromDb.displayName || '', email);
     const now = new Date().toISOString();
 
     const userRef = adminDb.ref(`users/${uid}`);
@@ -144,12 +138,11 @@ export async function POST(req: NextRequest) {
     const teacherRef = adminDb.ref(`teachers/${uid}`);
     const studentRef = adminDb.ref(`students/${uid}`);
 
-    const [existingUserSnapshot, existingAdminSnapshot, existingTeacherSnapshot, existingStudentSnapshot, authFresh] = await Promise.all([
+    const [existingUserSnapshot, existingAdminSnapshot, existingTeacherSnapshot, existingStudentSnapshot] = await Promise.all([
       userRef.get(),
       adminRef.get(),
       teacherRef.get(),
       studentRef.get(),
-      adminAuth.getUser(uid),
     ]);
 
     const existingUser = (existingUserSnapshot.exists() ? existingUserSnapshot.val() : null) as
@@ -182,13 +175,25 @@ export async function POST(req: NextRequest) {
       lastLoginAt: now,
     };
 
+    const teacherPayload = {
+      uid,
+      email,
+      displayName,
+      department:
+        existingTeacherSnapshot.exists() && typeof existingTeacherSnapshot.val()?.department === 'string'
+          ? String(existingTeacherSnapshot.val().department)
+          : 'Computer Science',
+      createdAt:
+        existingTeacherSnapshot.exists() && typeof existingTeacherSnapshot.val()?.createdAt === 'string'
+          ? String(existingTeacherSnapshot.val().createdAt)
+          : existingUser?.createdAt || existingAdmin?.createdAt || now,
+      lastLoginAt: now,
+    };
+
     await Promise.all([
       userRef.set(userPayload),
       adminRef.set(adminPayload),
-      adminAuth.setCustomUserClaims(uid, {
-        ...(authFresh.customClaims || {}),
-        role: 'admin',
-      }),
+      teacherRef.set(teacherPayload),
       recordRoleAudit({
         targetUid: uid,
         targetEmail: email,
@@ -214,14 +219,6 @@ export async function POST(req: NextRequest) {
   } catch (error: unknown) {
     console.error('Error creating admin:', error);
 
-    if (createdUid) {
-      try {
-        await adminAuth.deleteUser(createdUid);
-      } catch (rollbackError) {
-        console.error('Admin rollback failed:', rollbackError);
-      }
-    }
-
     if (getErrorCode(error) === 'auth/email-already-exists') {
       return NextResponse.json({ error: 'Email is already in use' }, { status: 409 });
     }
@@ -231,7 +228,10 @@ export async function POST(req: NextRequest) {
     }
 
     if (getErrorCode(error) === 'auth/user-not-found') {
-      return NextResponse.json({ error: 'Target user not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Target user not found. Only existing users can be promoted to admin.' },
+        { status: 404 }
+      );
     }
 
     return NextResponse.json({ error: 'Failed to create admin account' }, { status: 500 });

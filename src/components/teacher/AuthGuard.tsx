@@ -15,13 +15,15 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     if (!loading) {
       if (!user && pathname.startsWith('/teacher') && pathname !== '/teacher/login') {
         router.push('/teacher/login');
-      } else if (user && userType !== 'teacher' && pathname.startsWith('/teacher') && pathname !== '/teacher/login') {
+      } else if (
+        user &&
+        userType !== 'teacher' &&
+        userType !== 'admin' &&
+        pathname.startsWith('/teacher') &&
+        pathname !== '/teacher/login'
+      ) {
         // Logged in but not a teacher
-        if (userType === 'admin') {
-          router.push('/admin/dashboard');
-        } else {
-          router.push('/student');
-        }
+        router.push('/student');
       }
     }
   }, [user, loading, userType, router, pathname]);
@@ -41,7 +43,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   // If we are strictly on a protected route but still don't have a user or correct role
   const isTeacherRoute = pathname.startsWith('/teacher') && pathname !== '/teacher/login';
   
-  if (isTeacherRoute && (!user || userType !== 'teacher')) {
+  if (isTeacherRoute && (!user || (userType !== 'teacher' && userType !== 'admin'))) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
         <div className="text-center space-y-6 max-w-sm glass-card p-10 bg-white shadow-2xl border-rose-100">
