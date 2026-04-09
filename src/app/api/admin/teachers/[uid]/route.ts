@@ -1,3 +1,4 @@
+import { requireAdmin } from '@/lib/adminApiAuth';
 import { adminAuth } from '@/lib/firebaseAdmin';
 import { dbService } from '@/lib/database';
 import { NextRequest, NextResponse } from 'next/server';
@@ -7,6 +8,11 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ uid: string }> }
 ) {
+  const adminCheck = await requireAdmin(req);
+  if (!adminCheck.ok) {
+    return adminCheck.response;
+  }
+
   try {
     const { uid } = await params;
 
@@ -17,11 +23,18 @@ export async function DELETE(
       );
     }
 
-    // Delete from Firebase Auth
-    await adminAuth.deleteUser(uid);
+    try {
+      await adminAuth.deleteUser(uid);
+    } catch (error: any) {
+      if (error.code !== 'auth/user-not-found') {
+        throw error;
+      }
+    }
 
-    // Delete from database
-    await dbService.deleteTeacher(uid);
+    await Promise.all([
+      dbService.deleteTeacher(uid),
+      dbService.deleteUser(uid),
+    ]);
 
     return NextResponse.json(
       { success: true, message: 'Teacher deleted successfully' },

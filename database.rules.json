@@ -2,6 +2,13 @@
   "rules": {
     ".read": false,
     ".write": false,
+    "admins": {
+      ".read": "auth != null && root.child('users').child(auth.uid).child('role').val() == 'admin'",
+      "$uid": {
+        ".read": "auth != null && root.child('users').child(auth.uid).child('role').val() == 'admin'",
+        ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() == 'admin'"
+      }
+    },
     "teachers": {
       "$uid": {
         ".read": "auth != null && auth.uid == $uid",

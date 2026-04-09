@@ -1,12 +1,32 @@
 {
   "description": "Firebase Realtime Database Schema for Classroom Engagement",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "root": {
+    "admins": {
+      "{uid}": {
+        "uid": "string (Firebase Auth UID)",
+        "email": "string",
+        "displayName": "string",
+        "createdAt": "ISO8601 string",
+        "lastLoginAt": "ISO8601 string"
+      }
+    },
     "teachers": {
       "{uid}": {
         "uid": "string (Firebase Auth UID)",
         "email": "string",
         "displayName": "string",
+        "department": "string (optional)",
+        "createdAt": "ISO8601 string",
+        "lastLoginAt": "ISO8601 string"
+      }
+    },
+    "students": {
+      "{uid}": {
+        "uid": "string (Firebase Auth UID)",
+        "email": "string",
+        "displayName": "string",
+        "studentId": "string (optional)",
         "department": "string (optional)",
         "createdAt": "ISO8601 string",
         "lastLoginAt": "ISO8601 string"
