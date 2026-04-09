@@ -6,9 +6,9 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3010",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 3010",
     "lint": "eslint . --ext .ts,.tsx,.js,.jsx --max-warnings=0",
     "firebase:bootstrap": "node scripts/bootstrap-firebase.js"
   },

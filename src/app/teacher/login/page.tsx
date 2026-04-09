@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { dbService } from '@/lib/database';
 import { Card, CardContent, CardHeader, CardTitle, Input, Button } from '@classroom/ui-components';
 import { Activity, Lock, Mail, AlertCircle, LucideUserPlus, LucideArrowRight } from 'lucide-react';
 import Link from 'next/link';
@@ -14,8 +15,30 @@ export default function LoginPage() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const defaultAdminEmail = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || '').trim().toLowerCase();
   
   const router = useRouter();
+
+  const resolveRedirectPath = async (uid: string, emailAddress: string): Promise<string> => {
+    try {
+      const dbUser = await dbService.getUser(uid);
+      if (dbUser?.role === 'admin') return '/admin/dashboard';
+      if (dbUser?.role === 'teacher') return '/teacher';
+      if (dbUser?.role === 'student') return '/student';
+    } catch (error) {
+      console.warn('Could not resolve user role from database during login:', error);
+    }
+
+    if (defaultAdminEmail && emailAddress === defaultAdminEmail) {
+      return '/admin/dashboard';
+    }
+
+    if (emailAddress.endsWith('christuniversity.in')) {
+      return '/teacher';
+    }
+
+    return '/student';
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,15 +52,36 @@ export default function LoginPage() {
         throw new Error('Please use your official christuniversity.in faculty email.');
       }
 
+      let credentials;
       if (isSignUp) {
-        await createUserWithEmailAndPassword(auth, normalizedEmail, password);
+        credentials = await createUserWithEmailAndPassword(auth, normalizedEmail, password);
       } else {
-        await signInWithEmailAndPassword(auth, normalizedEmail, password);
+        credentials = await signInWithEmailAndPassword(auth, normalizedEmail, password);
       }
-      router.push('/teacher');
-    } catch (err: any) {
+
+      const redirectPath = await resolveRedirectPath(credentials.user.uid, normalizedEmail);
+      router.push(redirectPath);
+    } catch (err: unknown) {
       console.error(err);
-      setError(err.message || 'Authentication failed. Please check your credentials.');
+      const code =
+        typeof err === 'object' && err !== null && 'code' in err
+          ? String((err as { code?: unknown }).code || '')
+          : '';
+
+      if (code === 'auth/email-already-in-use') {
+        setError('Account already exists. Please sign in instead.');
+      } else if (code === 'auth/weak-password') {
+        setError('Password should be at least 6 characters.');
+      } else if (
+        code === 'auth/invalid-credential' ||
+        code === 'auth/user-not-found' ||
+        code === 'auth/wrong-password'
+      ) {
+        setError('Invalid credentials. Please check your email and password.');
+      } else {
+        setError(err instanceof Error ? err.message : 'Authentication failed. Please check your credentials.');
+      }
+    } finally {
       setIsLoading(false);
     }
   };

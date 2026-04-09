@@ -17,6 +17,8 @@ export default function RootRoleSelectionPage() {
         router.push('/teacher');
       } else if (userType === 'student') {
         router.push('/student');
+      } else if (userType === 'admin') {
+        router.push('/admin/dashboard');
       }
     }
   }, [user, loading, userType, router]);
@@ -33,7 +35,37 @@ export default function RootRoleSelectionPage() {
   }
 
   if (user) {
-    return null; // Will redirect in useEffect
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center p-6">
+        <div className="max-w-xl w-full bg-white border border-slate-200 rounded-2xl shadow-sm p-6 text-center space-y-4">
+          <h2 className="text-xl font-semibold text-slate-900">Preparing your dashboard...</h2>
+          <p className="text-sm text-slate-600">
+            Your account is signed in. If automatic redirect is taking longer than expected,
+            choose your portal below.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <Link
+              href="/admin/dashboard"
+              className="w-full px-4 py-3 rounded-xl bg-slate-900 text-white hover:bg-slate-800 transition-colors"
+            >
+              Admin
+            </Link>
+            <Link
+              href="/teacher"
+              className="w-full px-4 py-3 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors"
+            >
+              Teacher
+            </Link>
+            <Link
+              href="/student"
+              className="w-full px-4 py-3 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors"
+            >
+              Student
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

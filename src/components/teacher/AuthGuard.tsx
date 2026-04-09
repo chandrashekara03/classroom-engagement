@@ -17,7 +17,11 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         router.push('/teacher/login');
       } else if (user && userType !== 'teacher' && pathname.startsWith('/teacher') && pathname !== '/teacher/login') {
         // Logged in but not a teacher
-        router.push('/student');
+        if (userType === 'admin') {
+          router.push('/admin/dashboard');
+        } else {
+          router.push('/student');
+        }
       }
     }
   }, [user, loading, userType, router, pathname]);

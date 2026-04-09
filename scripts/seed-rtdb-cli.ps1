@@ -54,9 +54,40 @@ Write-Host "Using project: $ProjectId"
 Write-Host "Using RTDB instance: $Instance"
 
 $metadataJson = @{
-  schemaVersion = 1
+  schemaVersion = 2
   app = "classroom-engagement"
   initializedAt = (Get-Date).ToString("o")
+} | ConvertTo-Json -Compress
+
+$roleOptionsJson = @{
+  roles = @(
+    @{
+      value = "admin"
+      label = "Admin"
+      description = "Can manage users, roles, and admin dashboard settings."
+      enabled = $true
+    },
+    @{
+      value = "teacher"
+      label = "Teacher"
+      description = "Can create activities, sessions, and review classroom analytics."
+      enabled = $true
+    },
+    @{
+      value = "student"
+      label = "Student"
+      description = "Can join sessions and submit activity responses."
+      enabled = $true
+    }
+  )
+  departments = @(
+    @{ value = "computer-science"; label = "Computer Science" },
+    @{ value = "mathematics"; label = "Mathematics" },
+    @{ value = "physics"; label = "Physics" },
+    @{ value = "commerce"; label = "Commerce" },
+    @{ value = "management"; label = "Management" }
+  )
+  updatedAt = (Get-Date).ToString("o")
 } | ConvertTo-Json -Compress
 
 Ensure-Node -Path "/metadata" -JsonData $metadataJson
@@ -64,6 +95,8 @@ Ensure-Node -Path "/admins" -JsonData "{}"
 Ensure-Node -Path "/teachers" -JsonData "{}"
 Ensure-Node -Path "/students" -JsonData "{}"
 Ensure-Node -Path "/users" -JsonData "{}"
+Ensure-Node -Path "/roleOptions" -JsonData $roleOptionsJson
+Ensure-Node -Path "/adminRoleChanges" -JsonData "{}"
 Ensure-Node -Path "/sessions" -JsonData "{}"
 Ensure-Node -Path "/activityLogs" -JsonData "{}"
 Ensure-Node -Path "/responses" -JsonData "{}"

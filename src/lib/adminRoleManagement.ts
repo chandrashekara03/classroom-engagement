@@ -11,6 +11,8 @@ import {
 type RoleOptionsInput = {
   roles?: unknown;
   departments?: unknown;
+  updatedByUid?: unknown;
+  updatedByEmail?: unknown;
 };
 
 type Actor = {
@@ -83,13 +85,32 @@ function normalizeRoleOptions(input: unknown, actor?: Actor): RoleOptionsConfig 
     .map(normalizeDepartmentOption)
     .filter((option): option is DepartmentOption => Boolean(option));
 
-  return {
+  const sourceUpdatedByUid = isNonEmptyString(source.updatedByUid)
+    ? source.updatedByUid.trim()
+    : undefined;
+  const sourceUpdatedByEmail = isNonEmptyString(source.updatedByEmail)
+    ? source.updatedByEmail.trim().toLowerCase()
+    : undefined;
+
+  const normalized: RoleOptionsConfig = {
     roles: normalizedRoles.length > 0 ? normalizedRoles : defaults.roles,
     departments: normalizedDepartments.length > 0 ? normalizedDepartments : defaults.departments,
     updatedAt: new Date().toISOString(),
-    updatedByUid: actor?.uid,
-    updatedByEmail: actor?.email,
   };
+
+  if (actor?.uid) {
+    normalized.updatedByUid = actor.uid;
+  } else if (sourceUpdatedByUid) {
+    normalized.updatedByUid = sourceUpdatedByUid;
+  }
+
+  if (actor?.email) {
+    normalized.updatedByEmail = actor.email;
+  } else if (sourceUpdatedByEmail) {
+    normalized.updatedByEmail = sourceUpdatedByEmail;
+  }
+
+  return normalized;
 }
 
 export function resolveCurrentRole(
@@ -137,8 +158,11 @@ export async function recordRoleAudit(input: RoleAuditInput): Promise<void> {
     changedByUid: input.changedByUid,
     changedByEmail: input.changedByEmail,
     changedAt: input.changedAt || new Date().toISOString(),
-    reason: input.reason,
   };
+
+  if (isNonEmptyString(input.reason)) {
+    payload.reason = input.reason.trim();
+  }
 
   await auditRef.set(payload);
 }
